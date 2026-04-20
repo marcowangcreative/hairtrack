@@ -37,18 +37,28 @@ export async function POST(req: NextRequest) {
   let status: 'pending' | 'sent' = 'pending';
 
   if (!devMode) {
-    const res = await fetch('https://api.telnyx.com/v2/messages', {
+    const res = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, text, type: 'whatsapp' }),
+      body: JSON.stringify({
+        from,
+        to,
+        whatsapp_message: { type: 'text', text: { body: text } },
+      }),
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     if (!res.ok) {
+      console.error('[whatsapp/send] telnyx error', res.status, json);
+      const errMsg =
+        json?.errors?.[0]?.detail ??
+        json?.errors?.[0]?.title ??
+        json?.error ??
+        `Telnyx returned ${res.status}`;
       return Response.json(
-        { ok: false, error: json },
+        { ok: false, error: errMsg, telnyx: json },
         { status: 502 }
       );
     }
