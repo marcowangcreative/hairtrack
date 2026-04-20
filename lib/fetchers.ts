@@ -1,8 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 function hasSupabaseEnv() {
+  // Dashboard reads use the service-role client (bypasses RLS).
+  // Swap this back to anon once Supabase Auth is wired up.
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
@@ -20,7 +22,7 @@ export async function getSidebarCounts() {
   if (!hasSupabaseEnv()) return empty;
 
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const [factories, samples, threads, invoices] = await Promise.all([
       supabase.from('factories').select('id', { count: 'exact', head: true }),
@@ -48,7 +50,7 @@ export async function getSidebarCounts() {
 export async function getPinnedFactories() {
   if (!hasSupabaseEnv()) return [];
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from('factories')
       .select('id, short, swatch')
@@ -97,7 +99,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   if (!hasSupabaseEnv()) return empty;
 
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const [factories, samples, threads, invoices, activity] = await Promise.all([
       supabase.from('factories').select('status'),
