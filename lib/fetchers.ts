@@ -1,6 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import type { Factory, Sample, Invoice, WaThread, WaMessage } from '@/lib/types/db';
+import type {
+  Factory,
+  Sample,
+  SamplePhoto,
+  Invoice,
+  InvoiceLineItem,
+  WaThread,
+  WaMessage,
+} from '@/lib/types/db';
 
 export async function getCurrentUser(): Promise<{
   name: string;
@@ -391,4 +399,124 @@ export async function getWhatsAppViewData(
       samples: (sampleRes.data ?? []) as Sample[],
     },
   };
+}
+
+// =====================================================
+// SAMPLES VIEW
+// =====================================================
+
+export type SamplesViewData = {
+  configured: boolean;
+  samples: Array<Sample & { factory: Factory | null }>;
+  factoriesById: Record<string, Factory>;
+};
+
+export async function getSamplesViewData(): Promise<SamplesViewData> {
+  if (!hasSupabaseEnv()) {
+    return { configured: false, samples: [], factoriesById: {} };
+  }
+
+  const supabase = createAdminClient();
+  const [samplesRes, factoriesRes] = await Promise.all([
+    supabase
+      .from('ht_samples')
+      .select('*')
+      .order('requested_at', { ascending: false, nullsFirst: false }),
+    supabase.from('ht_factories').select('*'),
+  ]);
+
+  const factories = (factoriesRes.data ?? []) as Factory[];
+  const factoriesById = Object.fromEntries(
+    factories.map((f) => [f.id, f])
+  ) as Record<string, Factory>;
+
+  const samples = ((samplesRes.data ?? []) as Sample[]).map((s) => ({
+    ...s,
+    factory: s.factory_id ? factoriesById[s.factory_id] ?? null : null,
+  }));
+
+  return { configured: true, samples, factoriesById };
+}
+
+// =====================================================
+// INVOICES VIEW
+// =====================================================
+
+export type InvoiceListItem = Invoice & { factory: Factory | null };
+
+export type InvoicesViewData = {
+  configured: boolean;
+  invoices: InvoiceListItem[];
+  factories: Factory[];
+  selected:
+    | (InvoiceListItem & {
+        line_items: InvoiceLineItem[];
+      })
+    | null;
+};
+
+export async function getInvoicesViewData(
+  invoiceId?: string
+): Promise<InvoicesViewData> {
+  if (!hasSupabaseEnv()) {
+    return { configured: false, invoices: [], factories: [], selected: null };
+  }
+
+  const supabase = createAdminClient();
+  const [invoicesRes, factoriesRes] = await Promise.all([
+    supabase
+      .from('ht_invoices')
+      .select('*')
+      .order('created_at', { ascending: false }),
+    supabase.from('ht_factories').select('*').order('name'),
+  ]);
+
+  const factories = (factoriesRes.data ?? []) as Factory[];
+  const factoryById = new Map(factories.map((f) => [f.id, f]));
+  const invoices: InvoiceListItem[] = ((invoicesRes.data ?? []) as Invoice[]).map(
+    (inv) => ({
+      ...inv,
+      factory: inv.factory_id ? factoryById.get(inv.factory_id) ?? null : null,
+    })
+  );
+
+  const targetId =
+    (invoiceId && invoices.find((i) => i.id === invoiceId)?.id) ||
+    invoices[0]?.id;
+  if (!targetId) {
+    return { configured: true, invoices, factories, selected: null };
+  }
+
+  const base = invoices.find((i) => i.id === targetId)!;
+  const { data: lineItems } = await supabase
+    .from('ht_invoice_line_items')
+    .select('*')
+    .eq('invoice_id', targetId)
+    .order('ordinal', { ascending: true, nullsFirst: false });
+
+  return {
+    configured: true,
+    invoices,
+    factories,
+    selected: {
+      ...base,
+      line_items: (lineItems ?? []) as InvoiceLineItem[],
+    },
+  };
+}
+
+export async function getSamplePhotosBySample(
+  sampleIds: string[]
+): Promise<Record<string, SamplePhoto[]>> {
+  if (!hasSupabaseEnv() || sampleIds.length === 0) return {};
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('ht_sample_photos')
+    .select('*')
+    .in('sample_id', sampleIds);
+  const grouped: Record<string, SamplePhoto[]> = {};
+  for (const p of (data ?? []) as SamplePhoto[]) {
+    (grouped[p.sample_id] ??= []).push(p);
+  }
+  return grouped;
 }

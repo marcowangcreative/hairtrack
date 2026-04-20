@@ -97,3 +97,22 @@ export interface Invoice {
   confirmed_by: string | null;
   created_at: string;
 }
+
+export interface InvoiceLineItem {
+  id: string;
+  invoice_id: string;
+  sku: string | null;
+  description: string | null;
+  qty: number | null;
+  unit_price: number | null;
+  total: number | null;
+  ordinal: number | null;
+}
+
+export interface SamplePhoto {
+  id: string;
+  sample_id: string;
+  url: string;
+  caption: string | null;
+  created_at: string;
+}

@@ -169,6 +169,29 @@ export const Icons = {
       <path d="M12 17v5M9 10V2h6v8l3 3H6l3-3z" />
     </Base>
   ),
+  clock: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </Base>
+  ),
+  check: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M20 6L9 17l-5-5" />
+    </Base>
+  ),
+  x: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M18 6L6 18M6 6l12 12" />
+    </Base>
+  ),
+  upload: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <path d="M17 8l-5-5-5 5" />
+      <path d="M12 3v12" />
+    </Base>
+  ),
 } as const;
 
 export type IconKey = keyof typeof Icons;
