@@ -113,6 +113,38 @@ export const Icons = {
       />
     </Base>
   ),
+  list: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </Base>
+  ),
+  grid: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+    </Base>
+  ),
+  globe: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx={12} cy={12} r={10} />
+      <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
+    </Base>
+  ),
+  filter: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+    </Base>
+  ),
+  link: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+    </Base>
+  ),
+  chat: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </Base>
+  ),
 } as const;
 
 export type IconKey = keyof typeof Icons;

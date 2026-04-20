@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { Factory, Sample, Invoice, WaThread, WaMessage } from '@/lib/types/db';
 
 function hasSupabaseEnv() {
   // Dashboard reads use the service-role client (bypasses RLS).
@@ -156,4 +157,132 @@ export async function getDashboardData(): Promise<DashboardData> {
   } catch {
     return empty;
   }
+}
+
+export type FactoryListItem = Factory & {
+  sampleCount: number;
+  unread: number;
+  lifetimeSpend: number;
+};
+
+export type FactoriesViewData = {
+  configured: boolean;
+  factories: FactoryListItem[];
+  selected:
+    | (FactoryListItem & {
+        samples: Sample[];
+        invoices: Invoice[];
+        thread: (WaThread & { messages: WaMessage[] }) | null;
+      })
+    | null;
+};
+
+export async function getFactoriesViewData(
+  selectedId?: string
+): Promise<FactoriesViewData> {
+  if (!hasSupabaseEnv()) {
+    return { configured: false, factories: [], selected: null };
+  }
+
+  const supabase = createAdminClient();
+
+  const [factoriesRes, samplesRes, invoicesRes, threadsRes] = await Promise.all([
+    supabase
+      .from('ht_factories')
+      .select('*')
+      .order('pinned', { ascending: false })
+      .order('name'),
+    supabase.from('ht_samples').select('factory_id'),
+    supabase.from('ht_invoices').select('factory_id, total'),
+    supabase.from('ht_wa_threads').select('factory_id, unread_count'),
+  ]);
+
+  const factories = (factoriesRes.data ?? []) as Factory[];
+  const sampleRows = (samplesRes.data ?? []) as Array<{ factory_id: string | null }>;
+  const invoiceRows = (invoicesRes.data ?? []) as Array<{
+    factory_id: string | null;
+    total: number | null;
+  }>;
+  const threadRows = (threadsRes.data ?? []) as Array<{
+    factory_id: string | null;
+    unread_count: number | null;
+  }>;
+
+  const sampleCountBy = new Map<string, number>();
+  for (const r of sampleRows) {
+    if (!r.factory_id) continue;
+    sampleCountBy.set(r.factory_id, (sampleCountBy.get(r.factory_id) ?? 0) + 1);
+  }
+  const spendBy = new Map<string, number>();
+  for (const r of invoiceRows) {
+    if (!r.factory_id) continue;
+    spendBy.set(
+      r.factory_id,
+      (spendBy.get(r.factory_id) ?? 0) + (r.total ? Number(r.total) : 0)
+    );
+  }
+  const unreadBy = new Map<string, number>();
+  for (const r of threadRows) {
+    if (!r.factory_id) continue;
+    unreadBy.set(r.factory_id, (unreadBy.get(r.factory_id) ?? 0) + (r.unread_count ?? 0));
+  }
+
+  const list: FactoryListItem[] = factories.map((f) => ({
+    ...f,
+    sampleCount: sampleCountBy.get(f.id) ?? 0,
+    unread: unreadBy.get(f.id) ?? 0,
+    lifetimeSpend: spendBy.get(f.id) ?? 0,
+  }));
+
+  const targetId =
+    (selectedId && list.find((f) => f.id === selectedId)?.id) || list[0]?.id;
+  if (!targetId) {
+    return { configured: true, factories: list, selected: null };
+  }
+
+  const base = list.find((f) => f.id === targetId)!;
+
+  const [samplesDetail, invoicesDetail, threadDetail] = await Promise.all([
+    supabase
+      .from('ht_samples')
+      .select('*')
+      .eq('factory_id', targetId)
+      .order('requested_at', { ascending: false, nullsFirst: false }),
+    supabase
+      .from('ht_invoices')
+      .select('*')
+      .eq('factory_id', targetId)
+      .order('invoice_date', { ascending: false, nullsFirst: false }),
+    supabase
+      .from('ht_wa_threads')
+      .select('*')
+      .eq('factory_id', targetId)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  let thread: (WaThread & { messages: WaMessage[] }) | null = null;
+  if (threadDetail.data) {
+    const { data: msgs } = await supabase
+      .from('ht_wa_messages')
+      .select('*')
+      .eq('thread_id', threadDetail.data.id)
+      .order('sent_at', { ascending: false })
+      .limit(4);
+    thread = {
+      ...(threadDetail.data as WaThread),
+      messages: ((msgs as WaMessage[] | null) ?? []).reverse(),
+    };
+  }
+
+  return {
+    configured: true,
+    factories: list,
+    selected: {
+      ...base,
+      samples: (samplesDetail.data ?? []) as Sample[],
+      invoices: (invoicesDetail.data ?? []) as Invoice[],
+      thread,
+    },
+  };
 }

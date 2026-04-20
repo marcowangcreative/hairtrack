@@ -374,3 +374,125 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px;
 }
 .empty-state code { font-family: var(--font-mono); font-size: 11px; color: var(--fg-1); background: var(--bg-1); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--line); }
+
+/* ====== Toolbar search / seg ====== */
+.toolbar .search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  border-radius: 4px;
+  min-width: 220px;
+}
+.toolbar .search input { flex: 1; font-size: 12px; }
+.toolbar .search .kbd { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); padding: 1px 5px; border: 1px solid var(--line-2); border-radius: 3px; }
+
+.search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.search input { flex: 1; font-size: 12px; width: 100%; }
+.search svg { width: 12px; height: 12px; color: var(--fg-3); flex-shrink: 0; }
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 24px;
+}
+.seg button, .seg a {
+  padding: 0 9px;
+  font-size: 11px;
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; gap: 5px;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+}
+.seg button:last-child, .seg a:last-child { border-right: 0; }
+.seg button:hover, .seg a:hover { background: var(--bg-2); color: var(--fg); }
+.seg button.on, .seg a.on { background: var(--bg-2); color: var(--fg); }
+.seg svg { width: 12px; height: 12px; }
+
+/* ====== Tables ====== */
+.table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.table thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+.table tbody td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.table tbody tr:hover td { background: var(--bg-1); }
+
+/* ====== Factories split view ====== */
+.split {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: 100%;
+  min-height: 0;
+}
+.list-panel { border-right: 1px solid var(--line); overflow: auto; }
+.factory-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  align-items: center;
+}
+.factory-row:hover { background: var(--bg-1); }
+.factory-row.active { background: var(--bg-2); }
+.factory-row .mono-id { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+.factory-row .name { font-weight: 500; font-size: 13px; color: var(--fg); letter-spacing: -0.01em; }
+.factory-row .meta { font-size: 11px; color: var(--fg-2); display: flex; gap: 8px; margin-top: 2px; }
+.factory-row .thumb {
+  width: 36px; height: 36px; border-radius: 6px;
+  background: var(--bg-2);
+  overflow: hidden;
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg-2);
+  background-image: repeating-linear-gradient(45deg, var(--bg-2), var(--bg-2) 4px, var(--bg-3) 4px, var(--bg-3) 8px);
+}
+.factory-detail { overflow: auto; }
+.factory-hero { padding: 18px 22px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; }
+.factory-hero .big-thumb { width: 64px; height: 64px; border-radius: 8px; background-image: repeating-linear-gradient(45deg, var(--bg-2), var(--bg-2) 6px, var(--bg-3) 6px, var(--bg-3) 12px); }
+.factory-hero h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: -0.02em; font-weight: 500; }
+.factory-hero .subline { font-size: 12px; color: var(--fg-2); display: flex; gap: 10px; align-items: center; font-family: var(--font-mono); }
+.kv-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 14px 22px; gap: 12px 22px; border-bottom: 1px solid var(--line); }
+.kv-grid .k { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.kv-grid .v { font-size: 13px; color: var(--fg); margin-top: 2px; }
+.kv-grid .v.mono { font-family: var(--font-mono); font-size: 12px; }
+
+.subtabs { display: flex; gap: 0; padding: 0 22px; border-bottom: 1px solid var(--line); height: 34px; }
+.subtabs .t { height: 34px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--fg-2); border-bottom: 2px solid transparent; position: relative; top: 1px; gap: 6px; cursor: pointer; }
+.subtabs .t:hover { color: var(--fg); }
+.subtabs .t.on { color: var(--fg); border-bottom-color: var(--accent); }
+
+.section { padding: 18px 22px; }
+.section h3 { margin: 0 0 10px; font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 500; }
+
+/* ====== WhatsApp message bubbles ====== */
+.wa-msg { max-width: 70%; padding: 7px 11px; border-radius: 8px; font-size: 12.5px; line-height: 1.4; }
+.wa-msg.them { background: var(--bg); border: 1px solid var(--line); color: var(--fg); align-self: flex-start; border-top-left-radius: 2px; }
+.wa-msg.me { background: color-mix(in oklch, var(--wa) 18%, var(--bg-1)); border: 1px solid color-mix(in oklch, var(--wa) 30%, transparent); color: var(--fg); align-self: flex-end; border-top-right-radius: 2px; }
+.wa-msg .ts { font-family: var(--font-mono); font-size: 9px; color: var(--fg-3); margin-top: 4px; display: block; }
+.wa-msg.img { padding: 3px 3px 5px; }
+.wa-msg.img .placeholder { width: 200px; height: 130px; border-radius: 5px; background-image: repeating-linear-gradient(45deg, var(--bg-2), var(--bg-2) 6px, var(--bg-3) 6px, var(--bg-3) 12px); display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px; color: var(--fg-2); }
+.wa-msg.img .cap { padding: 4px 8px 0; font-size: 11px; color: var(--fg-1); }
