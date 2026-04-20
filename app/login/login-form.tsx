@@ -16,6 +16,23 @@ export function LoginForm({ next }: { next: string }) {
     setBusy(true);
     setErr(null);
 
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      setErr(
+        'Supabase env vars missing on this deployment (NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY). Check Vercel → Settings → Environment Variables (Production) and redeploy.'
+      );
+      setBusy(false);
+      return;
+    }
+    if (!/^https:\/\/[^/]+\.supabase\.co\/?$/.test(url)) {
+      setErr(
+        `NEXT_PUBLIC_SUPABASE_URL looks malformed: "${url}". It should be like https://<project-ref>.supabase.co (no trailing slash, no quotes).`
+      );
+      setBusy(false);
+      return;
+    }
+
     const supabase = createClient();
     const origin =
       typeof window !== 'undefined' ? window.location.origin : '';
@@ -23,17 +40,29 @@ export function LoginForm({ next }: { next: string }) {
       next
     )}`;
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: redirectTo },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: redirectTo },
+      });
 
-    if (error) {
-      setErr(error.message);
+      if (error) {
+        setErr(error.message);
+        setBusy(false);
+        return;
+      }
+      router.push(`/login?sent=1&next=${encodeURIComponent(next)}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/not valid JSON|Unexpected token/i.test(msg)) {
+        setErr(
+          `Supabase did not return JSON. This almost always means NEXT_PUBLIC_SUPABASE_URL is wrong on this deployment. Got URL: ${url}`
+        );
+      } else {
+        setErr(msg);
+      }
       setBusy(false);
-      return;
     }
-    router.push(`/login?sent=1&next=${encodeURIComponent(next)}`);
   }
 
   return (
