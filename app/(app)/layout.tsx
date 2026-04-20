@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/sidebar';
 import { KeyboardNav } from '@/components/keyboard-nav';
+import { AppShell } from '@/components/app-shell';
 import {
   getSidebarCounts,
   getPinnedFactories,
@@ -18,10 +19,11 @@ export default async function AppLayout({
   ]);
 
   return (
-    <div className="app sidebar-layout">
-      <Sidebar counts={counts} pinnedFactories={pinned} user={user} />
-      <main className="main">{children}</main>
+    <AppShell
+      sidebar={<Sidebar counts={counts} pinnedFactories={pinned} user={user} />}
+    >
+      {children}
       <KeyboardNav />
-    </div>
+    </AppShell>
   );
 }

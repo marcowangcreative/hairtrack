@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 
@@ -24,6 +24,26 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: 'Hair Track',
   description: 'Factory ops tracker for hairline launches.',
+  manifest: '/manifest.webmanifest',
+  applicationName: 'Hair Track',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Hair Track',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f6f4ee' },
+    { media: '(prefers-color-scheme: dark)', color: '#0e0e0f' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 // Runs before React hydrates — reads saved preference or falls back to
