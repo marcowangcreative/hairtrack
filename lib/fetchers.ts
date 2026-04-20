@@ -286,3 +286,74 @@ export async function getFactoriesViewData(
     },
   };
 }
+
+export type WaThreadListItem = WaThread & { factory: Factory | null };
+
+export type WhatsAppViewData = {
+  configured: boolean;
+  threads: WaThreadListItem[];
+  selected:
+    | (WaThreadListItem & {
+        messages: WaMessage[];
+        samples: Sample[];
+      })
+    | null;
+};
+
+export async function getWhatsAppViewData(
+  threadId?: string
+): Promise<WhatsAppViewData> {
+  if (!hasSupabaseEnv()) {
+    return { configured: false, threads: [], selected: null };
+  }
+
+  const supabase = createAdminClient();
+
+  const [threadsRes, factoriesRes] = await Promise.all([
+    supabase
+      .from('ht_wa_threads')
+      .select('*')
+      .order('pinned', { ascending: false })
+      .order('last_message_at', { ascending: false, nullsFirst: false }),
+    supabase.from('ht_factories').select('*'),
+  ]);
+
+  const factories = (factoriesRes.data ?? []) as Factory[];
+  const factoryById = new Map(factories.map((f) => [f.id, f]));
+  const threads: WaThreadListItem[] = ((threadsRes.data ?? []) as WaThread[]).map(
+    (t) => ({ ...t, factory: t.factory_id ? factoryById.get(t.factory_id) ?? null : null })
+  );
+
+  const targetId =
+    (threadId && threads.find((t) => t.id === threadId)?.id) || threads[0]?.id;
+  if (!targetId) {
+    return { configured: true, threads, selected: null };
+  }
+
+  const selBase = threads.find((t) => t.id === targetId)!;
+  const [msgRes, sampleRes] = await Promise.all([
+    supabase
+      .from('ht_wa_messages')
+      .select('*')
+      .eq('thread_id', targetId)
+      .order('sent_at', { ascending: true }),
+    selBase.factory_id
+      ? supabase
+          .from('ht_samples')
+          .select('*')
+          .eq('factory_id', selBase.factory_id)
+          .order('requested_at', { ascending: false, nullsFirst: false })
+          .limit(6)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  return {
+    configured: true,
+    threads,
+    selected: {
+      ...selBase,
+      messages: (msgRes.data ?? []) as WaMessage[],
+      samples: (sampleRes.data ?? []) as Sample[],
+    },
+  };
+}

@@ -496,3 +496,49 @@ a { color: inherit; text-decoration: none; }
 .wa-msg.img { padding: 3px 3px 5px; }
 .wa-msg.img .placeholder { width: 200px; height: 130px; border-radius: 5px; background-image: repeating-linear-gradient(45deg, var(--bg-2), var(--bg-2) 6px, var(--bg-3) 6px, var(--bg-3) 12px); display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px; color: var(--fg-2); }
 .wa-msg.img .cap { padding: 4px 8px 0; font-size: 11px; color: var(--fg-1); }
+
+/* ====== WhatsApp 3-column layout ====== */
+.wa-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 280px;
+  height: 100%;
+  min-height: 0;
+}
+.wa-list { border-right: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; }
+.wa-list .filter-row { display: flex; gap: 0; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.wa-list .filter { font-size: 11px; color: var(--fg-2); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.wa-list .filter:hover { color: var(--fg); }
+.wa-list .filter.on { background: var(--bg-2); color: var(--fg); }
+
+.wa-thread {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  color: inherit;
+}
+.wa-thread:hover { background: var(--bg-1); }
+.wa-thread.active { background: var(--bg-2); }
+.wa-thread .avatar { width: 28px; height: 28px; }
+.wa-thread .who { font-size: 12.5px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; }
+.wa-thread .who .sub { font-size: 10px; color: var(--fg-3); font-family: var(--font-mono); font-weight: 400; margin-left: 5px; }
+.wa-thread .preview { font-size: 11.5px; color: var(--fg-2); margin-top: 2px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.wa-thread .time { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+.wa-thread .unread { display: inline-block; background: var(--wa); color: #0e0e0f; border-radius: 9px; padding: 1px 6px; font-size: 10px; font-family: var(--font-mono); font-weight: 600; margin-top: 4px; }
+
+.wa-chat { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.wa-chat .head { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
+.wa-chat .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-1); }
+.wa-day { text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); margin: 10px 0 4px; }
+.wa-compose { padding: 10px 14px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; background: var(--bg); }
+.wa-compose input { flex: 1; padding: 7px 10px; background: var(--bg-1); border: 1px solid var(--line); border-radius: 4px; font-size: 12px; }
+
+.wa-context { border-left: 1px solid var(--line); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+.wa-context .block { border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+.wa-context .label { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.kv { display: grid; grid-template-columns: 80px 1fr; gap: 3px 10px; font-size: 11.5px; }
+.kv .k { color: var(--fg-3); font-family: var(--font-mono); font-size: 10.5px; }
+.kv .v { color: var(--fg-1); }

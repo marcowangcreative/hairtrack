@@ -4,6 +4,7 @@ type IconProps = {
   strokeW?: number;
   viewBox?: string;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 function Base({
@@ -12,6 +13,7 @@ function Base({
   viewBox = '0 0 24 24',
   children,
   className,
+  style,
 }: IconProps & { children: React.ReactNode }) {
   return (
     <svg
@@ -24,6 +26,7 @@ function Base({
       strokeWidth={strokeW}
       strokeLinecap="round"
       strokeLinejoin="round"
+      style={style}
     >
       {children}
     </svg>
@@ -143,6 +146,27 @@ export const Icons = {
   chat: (p: IconProps) => (
     <Base {...p}>
       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </Base>
+  ),
+  phone: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+    </Base>
+  ),
+  paperclip: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+    </Base>
+  ),
+  send: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+    </Base>
+  ),
+  pin: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M12 17v5M9 10V2h6v8l3 3H6l3-3z" />
     </Base>
   ),
 } as const;
