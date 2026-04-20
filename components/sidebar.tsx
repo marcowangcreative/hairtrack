@@ -22,9 +22,10 @@ type Props = {
     invoicesOpen: number;
   };
   pinnedFactories: Array<{ id: string; short: string | null; swatch: string | null }>;
+  user: { name: string; email: string; role: string } | null;
 };
 
-export function Sidebar({ counts, pinnedFactories }: Props) {
+export function Sidebar({ counts, pinnedFactories, user }: Props) {
   const pathname = usePathname();
 
   const items: NavItem[] = [
@@ -91,11 +92,38 @@ export function Sidebar({ counts, pinnedFactories }: Props) {
       )}
 
       <div className="footer">
-        <div className="avatar">HT</div>
-        <div className="who">
-          <div className="name">Signed out</div>
-          <div className="role">Configure auth</div>
+        <div className="avatar">
+          {(user?.name ?? 'HT').slice(0, 2).toUpperCase()}
         </div>
+        <div className="who" style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="name"
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {user?.name ?? 'Signed out'}
+          </div>
+          <div className="role">{user?.role ?? 'not signed in'}</div>
+        </div>
+        {user && (
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="btn ghost sm"
+              title="Sign out"
+              style={{
+                padding: '0 6px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+              }}
+            >
+              out
+            </button>
+          </form>
+        )}
       </div>
     </aside>
   );

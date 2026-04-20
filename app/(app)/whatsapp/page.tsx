@@ -3,6 +3,7 @@ import { Toolbar } from '@/components/toolbar';
 import { Icons } from '@/components/icons';
 import { WaThreadList } from '@/components/wa-thread-list';
 import { WaComposer } from '@/components/wa-composer';
+import { WaRealtime } from '@/components/wa-realtime';
 import { StagePill } from '@/components/pills';
 import { getWhatsAppViewData } from '@/lib/fetchers';
 import type { WaMessage } from '@/lib/types/db';
@@ -58,22 +59,23 @@ export default async function WhatsAppPage({
 
   return (
     <>
+      <WaRealtime />
       <Toolbar
         crumbs={['Workspace', 'WhatsApp']}
         right={
           <>
             <span
-              className={`pill ${telnyxConfigured ? 'ok' : 'dim'}`}
+              className={`pill ${telnyxConfigured ? 'ok' : 'warn'}`}
               title={
                 telnyxConfigured
                   ? 'Telnyx API key + number detected'
-                  : 'Set TELNYX_API_KEY and TELNYX_WHATSAPP_NUMBER in .env.local'
+                  : 'Telnyx not configured — messages save locally but do not actually send. Set TELNYX_API_KEY + TELNYX_WHATSAPP_NUMBER.'
               }
             >
               <span className="dot" />
               {telnyxConfigured
                 ? `Connected · ${process.env.TELNYX_WHATSAPP_NUMBER}`
-                : 'Not connected'}
+                : 'Dev mode · sends save locally'}
             </span>
             <button className="btn" disabled>
               <Icons.filter /> Filter
@@ -109,10 +111,7 @@ export default async function WhatsAppPage({
             />
 
             {data.selected ? (
-              <ChatPane
-                selected={data.selected}
-                telnyxConfigured={telnyxConfigured}
-              />
+              <ChatPane selected={data.selected} />
             ) : (
               <div
                 className="wa-chat"
@@ -136,12 +135,10 @@ export default async function WhatsAppPage({
 
 function ChatPane({
   selected,
-  telnyxConfigured,
 }: {
   selected: NonNullable<
     Awaited<ReturnType<typeof getWhatsAppViewData>>['selected']
   >;
-  telnyxConfigured: boolean;
 }) {
   const label = selected.name ?? selected.factory?.name ?? selected.wa_phone;
   const initial = (label ?? '?').trim().charAt(0).toUpperCase();
@@ -246,11 +243,7 @@ function ChatPane({
         ))}
       </div>
 
-      <WaComposer
-        threadId={selected.id}
-        to={selected.wa_phone}
-        canSend={telnyxConfigured}
-      />
+      <WaComposer threadId={selected.id} to={selected.wa_phone} canSend />
     </div>
   );
 }

@@ -82,7 +82,9 @@ export default async function FactoriesPage({
               selectedId={data.selected?.id ?? null}
               tab={tab}
             />
-            {data.selected && <FactoryDetail data={data} tab={tab} />}
+            {data.selected && (
+              <FactoryDetail selected={data.selected} tab={tab} />
+            )}
           </div>
         </div>
       )}
@@ -91,13 +93,12 @@ export default async function FactoriesPage({
 }
 
 function FactoryDetail({
-  data,
+  selected: sel,
   tab,
 }: {
-  data: FactoriesViewData & { selected: NonNullable<FactoriesViewData['selected']> };
+  selected: NonNullable<FactoriesViewData['selected']>;
   tab: Tab;
 }) {
-  const sel = data.selected;
   const invoicesForTab = sel.invoices.length;
 
   return (
@@ -211,7 +212,7 @@ function FactoryDetail({
         })}
       </div>
 
-      {tab === 'overview' && <OverviewTab data={data} />}
+      {tab === 'overview' && <OverviewTab selected={sel} />}
       {tab === 'samples' && <SamplesTab samples={sel.samples} />}
       {tab === 'orders' && <OrdersTab invoices={sel.invoices} />}
       {tab === 'chat' && <ChatTab thread={sel.thread} factoryId={sel.id} />}
@@ -252,11 +253,10 @@ function KV({
 }
 
 function OverviewTab({
-  data,
+  selected: sel,
 }: {
-  data: FactoriesViewData & { selected: NonNullable<FactoriesViewData['selected']> };
+  selected: NonNullable<FactoriesViewData['selected']>;
 }) {
-  const sel = data.selected;
   const active = sel.samples.filter(
     (s) => s.stage !== 'approved' && s.stage !== 'rejected'
   );

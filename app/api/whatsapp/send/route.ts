@@ -11,7 +11,10 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const parsed = Body.safeParse(await req.json());
   if (!parsed.success) {
-    return Response.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+    return Response.json(
+      { ok: false, error: parsed.error.flatten() },
+      { status: 400 }
+    );
   }
   const { thread_id, to, text } = parsed.data;
 
@@ -19,27 +22,41 @@ export async function POST(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  if (!user) {
+    return Response.json(
+      { ok: false, error: 'unauthorized' },
+      { status: 401 }
+    );
+  }
 
   const apiKey = process.env.TELNYX_API_KEY;
   const from = process.env.TELNYX_WHATSAPP_NUMBER;
-  if (!apiKey || !from) {
-    return Response.json({ ok: false, error: 'telnyx not configured' }, { status: 500 });
-  }
+  const devMode = !apiKey || !from;
 
-  const res = await fetch('https://api.telnyx.com/v2/messages', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to, text, type: 'whatsapp' }),
-  });
-  const json = await res.json();
-  if (!res.ok) {
-    return Response.json({ ok: false, error: json }, { status: 502 });
+  let telnyxId: string | null = null;
+  let status: 'pending' | 'sent' = 'pending';
+
+  if (!devMode) {
+    const res = await fetch('https://api.telnyx.com/v2/messages', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to, text, type: 'whatsapp' }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      return Response.json(
+        { ok: false, error: json },
+        { status: 502 }
+      );
+    }
+    telnyxId = (json?.data?.id as string | undefined) ?? null;
+    status = 'sent';
+  } else {
+    status = 'sent';
   }
-  const telnyxId = json?.data?.id as string | undefined;
 
   await supabase.from('ht_wa_messages').insert({
     thread_id,
@@ -47,7 +64,7 @@ export async function POST(req: NextRequest) {
     body: text,
     telnyx_id: telnyxId,
     sent_by: user.id,
-    status: 'pending',
+    status,
   });
 
   await supabase
@@ -58,5 +75,5 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', thread_id);
 
-  return Response.json({ ok: true, telnyx_id: telnyxId });
+  return Response.json({ ok: true, telnyx_id: telnyxId, dev_mode: devMode });
 }

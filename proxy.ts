@@ -1,10 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-/**
- * Refreshes Supabase auth cookies on every request so Server Components see a live session.
- * See: https://supabase.com/docs/guides/auth/server-side/nextjs
- */
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/auth',
+  '/api/whatsapp/incoming',
+  '/api/whatsapp/status',
+  '/api/inngest',
+];
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -18,7 +28,9 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
@@ -27,15 +39,23 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname, search } = request.nextUrl;
+  if (!user && !isPublic(pathname)) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.search = `?next=${encodeURIComponent(pathname + search)}`;
+    return NextResponse.redirect(loginUrl);
+  }
+
   return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Skip static assets and internals. Adjust as you add public pages.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

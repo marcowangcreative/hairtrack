@@ -1,5 +1,40 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import type { Factory, Sample, Invoice, WaThread, WaMessage } from '@/lib/types/db';
+
+export async function getCurrentUser(): Promise<{
+  name: string;
+  email: string;
+  role: string;
+} | null> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return null;
+  }
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: profile } = await supabase
+      .from('ht_profiles')
+      .select('name, role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    return {
+      name: profile?.name ?? user.email?.split('@')[0] ?? 'User',
+      email: user.email ?? '',
+      role: profile?.role ?? 'ops',
+    };
+  } catch {
+    return null;
+  }
+}
 
 function hasSupabaseEnv() {
   // Dashboard reads use the service-role client (bypasses RLS).
