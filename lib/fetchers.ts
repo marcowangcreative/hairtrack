@@ -520,6 +520,275 @@ export async function getInvoicesViewData(
 }
 
 // =====================================================
+// COSTS VIEW
+// =====================================================
+
+export type SkuRow = {
+  sku: string;
+  description: string | null;
+  factoryShort: string | null;
+  factoryId: string | null;
+  totalQty: number;
+  avgUnitCost: number | null;
+  totalCogs: number;
+  invoiceCount: number;
+};
+
+export type FactorySpend = {
+  factoryId: string;
+  factoryShort: string;
+  spend: number;
+};
+
+export type CashRunwayBucket = {
+  label: string;
+  amount: number;
+  note: string;
+  cls: '' | 'ok' | 'warn' | 'danger';
+};
+
+export type CostsViewData = {
+  configured: boolean;
+  stats: {
+    totalCogs: number;
+    openInvoiceTotal: number;
+    poCommitments: number;
+    skuCount: number;
+  };
+  skus: SkuRow[];
+  spendByFactory: FactorySpend[];
+  cashRunway: CashRunwayBucket[];
+  unmatched: number;
+};
+
+export async function getCostsViewData(): Promise<CostsViewData> {
+  const empty: CostsViewData = {
+    configured: hasSupabaseEnv(),
+    stats: { totalCogs: 0, openInvoiceTotal: 0, poCommitments: 0, skuCount: 0 },
+    skus: [],
+    spendByFactory: [],
+    cashRunway: [],
+    unmatched: 0,
+  };
+  if (!hasSupabaseEnv()) return empty;
+
+  const supabase = createAdminClient();
+  const [invoicesRes, lineItemsRes, posRes, factoriesRes] = await Promise.all([
+    supabase
+      .from('ht_invoices')
+      .select(
+        'id, factory_id, total, parse_status, due_date, invoice_number'
+      ),
+    supabase
+      .from('ht_invoice_line_items')
+      .select('invoice_id, sku, description, qty, unit_price, total'),
+    supabase
+      .from('ht_pos')
+      .select(
+        'id, factory_id, total, status, deposit_paid, balance_paid, ship_by'
+      ),
+    supabase.from('ht_factories').select('id, short, name'),
+  ]);
+
+  type InvoiceRow = {
+    id: string;
+    factory_id: string | null;
+    total: number | null;
+    parse_status: string;
+    due_date: string | null;
+    invoice_number: string | null;
+  };
+  type LineItemRow = {
+    invoice_id: string | null;
+    sku: string | null;
+    description: string | null;
+    qty: number | null;
+    unit_price: number | null;
+    total: number | null;
+  };
+  type PoRow = {
+    id: string;
+    factory_id: string | null;
+    total: number | null;
+    status: string;
+    deposit_paid: boolean;
+    balance_paid: boolean;
+    ship_by: string | null;
+  };
+
+  const invoices = (invoicesRes.data ?? []) as InvoiceRow[];
+  const lineItems = (lineItemsRes.data ?? []) as LineItemRow[];
+  const pos = (posRes.data ?? []) as PoRow[];
+  const factories = (factoriesRes.data ?? []) as Array<{
+    id: string;
+    short: string | null;
+    name: string;
+  }>;
+
+  const factoryShortById = new Map(
+    factories.map((f) => [f.id, f.short ?? f.name])
+  );
+  const factoryByInvoiceId = new Map(
+    invoices.map((i) => [i.id, i.factory_id])
+  );
+
+  // Aggregate SKUs across line items.
+  type Agg = {
+    sku: string;
+    description: string | null;
+    factoryId: string | null;
+    totalQty: number;
+    totalCost: number;
+    unitPriceSum: number;
+    unitPriceN: number;
+    invoiceIds: Set<string>;
+  };
+  const skuAgg = new Map<string, Agg>();
+  let unmatched = 0;
+  for (const li of lineItems) {
+    if (!li.sku) {
+      if ((li.qty ?? 0) > 0 || (li.total ?? 0) > 0) unmatched++;
+      continue;
+    }
+    const factoryId = li.invoice_id
+      ? factoryByInvoiceId.get(li.invoice_id) ?? null
+      : null;
+    const key = `${li.sku}|${factoryId ?? ''}`;
+    const existing = skuAgg.get(key) ?? {
+      sku: li.sku,
+      description: li.description,
+      factoryId,
+      totalQty: 0,
+      totalCost: 0,
+      unitPriceSum: 0,
+      unitPriceN: 0,
+      invoiceIds: new Set<string>(),
+    };
+    existing.totalQty += Number(li.qty ?? 0);
+    existing.totalCost += Number(li.total ?? 0);
+    if (li.unit_price != null) {
+      existing.unitPriceSum += Number(li.unit_price);
+      existing.unitPriceN += 1;
+    }
+    if (!existing.description && li.description) existing.description = li.description;
+    if (li.invoice_id) existing.invoiceIds.add(li.invoice_id);
+    skuAgg.set(key, existing);
+  }
+
+  const skus: SkuRow[] = Array.from(skuAgg.values())
+    .map((a) => ({
+      sku: a.sku,
+      description: a.description,
+      factoryId: a.factoryId,
+      factoryShort: a.factoryId
+        ? factoryShortById.get(a.factoryId) ?? null
+        : null,
+      totalQty: a.totalQty,
+      avgUnitCost: a.unitPriceN > 0 ? a.unitPriceSum / a.unitPriceN : null,
+      totalCogs: a.totalCost,
+      invoiceCount: a.invoiceIds.size,
+    }))
+    .sort((a, b) => b.totalCogs - a.totalCogs);
+
+  // Spend by factory (sum of all invoice totals).
+  const spendBy = new Map<string, number>();
+  for (const inv of invoices) {
+    if (!inv.factory_id || inv.total == null) continue;
+    spendBy.set(
+      inv.factory_id,
+      (spendBy.get(inv.factory_id) ?? 0) + Number(inv.total)
+    );
+  }
+  const spendByFactory: FactorySpend[] = Array.from(spendBy.entries())
+    .map(([factoryId, spend]) => ({
+      factoryId,
+      factoryShort: factoryShortById.get(factoryId) ?? factoryId,
+      spend,
+    }))
+    .sort((a, b) => b.spend - a.spend);
+
+  // Stats.
+  const totalCogs = skus.reduce((a, s) => a + s.totalCogs, 0);
+  const openInvoiceTotal = invoices
+    .filter((i) => i.parse_status !== 'confirmed' && i.total != null)
+    .reduce((a, i) => a + Number(i.total), 0);
+  const poCommitments = pos
+    .filter((p) => !p.balance_paid && p.total != null)
+    .reduce((a, p) => a + Number(p.total), 0);
+
+  // Cash runway buckets.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const inDays = (s: string | null): number | null => {
+    if (!s) return null;
+    const d = new Date(s);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - today.getTime()) / 86_400_000);
+  };
+
+  type Bucket = { amount: number; items: string[] };
+  const buckets: Record<string, Bucket> = {
+    overdue: { amount: 0, items: [] },
+    week1: { amount: 0, items: [] },
+    week2: { amount: 0, items: [] },
+    days30: { amount: 0, items: [] },
+    days60: { amount: 0, items: [] },
+    later: { amount: 0, items: [] },
+  };
+
+  function bucketFor(days: number): keyof typeof buckets {
+    if (days < 0) return 'overdue';
+    if (days <= 7) return 'week1';
+    if (days <= 14) return 'week2';
+    if (days <= 30) return 'days30';
+    if (days <= 60) return 'days60';
+    return 'later';
+  }
+
+  for (const inv of invoices) {
+    if (inv.parse_status === 'confirmed' || inv.total == null) continue;
+    const days = inDays(inv.due_date);
+    if (days == null) continue;
+    const b = buckets[bucketFor(days)];
+    b.amount += Number(inv.total);
+    b.items.push(`Invoice ${inv.invoice_number ?? inv.id.slice(0, 6)}`);
+  }
+  for (const po of pos) {
+    if (po.balance_paid || po.total == null) continue;
+    const days = inDays(po.ship_by);
+    if (days == null) continue;
+    const remaining =
+      Number(po.total) * (po.deposit_paid ? 0.5 : 1);
+    const b = buckets[bucketFor(days)];
+    b.amount += remaining;
+    b.items.push(`PO ${po.id}${po.deposit_paid ? ' (balance)' : ''}`);
+  }
+
+  const cashRunway: CashRunwayBucket[] = [
+    { label: 'Overdue', amount: buckets.overdue.amount, note: buckets.overdue.items.join(', ') || '—', cls: 'danger' },
+    { label: 'This week', amount: buckets.week1.amount, note: buckets.week1.items.join(', ') || '—', cls: 'warn' },
+    { label: 'Next week', amount: buckets.week2.amount, note: buckets.week2.items.join(', ') || '—', cls: '' },
+    { label: 'Within 30d', amount: buckets.days30.amount, note: buckets.days30.items.join(', ') || '—', cls: 'ok' },
+    { label: '30\u201360d', amount: buckets.days60.amount, note: buckets.days60.items.join(', ') || '—', cls: 'ok' },
+    { label: '60d+', amount: buckets.later.amount, note: buckets.later.items.join(', ') || '—', cls: '' },
+  ];
+
+  return {
+    configured: true,
+    stats: {
+      totalCogs,
+      openInvoiceTotal,
+      poCommitments,
+      skuCount: skus.length,
+    },
+    skus,
+    spendByFactory,
+    cashRunway,
+    unmatched,
+  };
+}
+
+// =====================================================
 // TIMELINE VIEW
 // =====================================================
 

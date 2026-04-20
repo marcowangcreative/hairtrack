@@ -413,6 +413,61 @@ a { color: inherit; text-decoration: none; }
   z-index: 1;
 }
 
+/* ====== Costs ====== */
+.cost-wrap { display: flex; flex-direction: column; gap: 14px; }
+.cost-header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cost-header .stat {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.cost-header .stat .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.cost-header .stat .value {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.cost-header .stat .delta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  margin-top: 4px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+.bar-row .label { font-size: 12px; color: var(--fg-1); }
+.bar-row .num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg);
+  text-align: right;
+}
+.barbg {
+  height: 6px;
+  background: var(--bg-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.barfill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
 /* ====== Misc ====== */
 .muted { color: var(--fg-3); }
 .link { color: var(--accent-fg); }
