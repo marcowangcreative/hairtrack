@@ -750,3 +750,68 @@ a { color: inherit; text-decoration: none; }
   border-top: 1px solid var(--line);
   margin-top: 4px;
 }
+
+/* ====== Ask Hair Track ====== */
+.suggest {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 12px; color: var(--fg-1);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.suggest:hover { background: var(--bg-2); border-color: var(--line-2); color: var(--fg); }
+.ask-answer {
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px; line-height: 1.55; color: var(--fg-1);
+}
+.ask-answer p { margin: 0 0 8px; }
+.ask-answer p:last-child { margin-bottom: 0; }
+.ask-answer h1, .ask-answer h2, .ask-answer h3 {
+  font-size: 13px; font-weight: 500;
+  margin: 12px 0 6px; color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.ask-answer ul, .ask-answer ol { margin: 6px 0 10px; padding-left: 20px; }
+.ask-answer li { margin: 2px 0; }
+.ask-answer code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 1px 5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--accent-fg);
+}
+.ask-answer pre {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.ask-answer pre code { padding: 0; background: none; border: 0; }
+.ask-answer table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.ask-answer th, .ask-answer td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.ask-answer th { color: var(--fg-3); font-weight: 500; font-size: 11px; }
+.ask-answer strong { color: var(--fg); font-weight: 500; }
+.ask-answer a { color: var(--accent-fg); }

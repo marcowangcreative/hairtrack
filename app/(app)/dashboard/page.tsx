@@ -2,6 +2,7 @@ import { Toolbar } from '@/components/toolbar';
 import { Icons } from '@/components/icons';
 import { getDashboardData, getAllFactories } from '@/lib/fetchers';
 import { SampleAddButton } from '@/components/sample-actions';
+import { AskButton } from '@/components/ask-dialog';
 
 const KIND_LABELS: Record<string, string> = {
   'factory.created': 'Factory created',
@@ -85,13 +86,7 @@ export default async function DashboardPage() {
         right={
           <>
             <SampleAddButton factories={factories} />
-            <button
-              className="btn"
-              disabled
-              title="Natural-language queries over your data — not wired yet"
-            >
-              <Icons.sparkle /> Ask Hair Track (soon)
-            </button>
+            <AskButton />
           </>
         }
       />
