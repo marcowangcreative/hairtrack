@@ -3,9 +3,29 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyTelnyxSignature } from '@/lib/telnyx';
 
 /**
- * Telnyx WhatsApp inbound webhook.
- * Docs: https://developers.telnyx.com/docs/messaging/whatsapp
+ * Telnyx WhatsApp unified webhook.
+ *
+ * Telnyx's WhatsApp product sends all event types to the same URL:
+ * - inbound messages (`*.received`, `*.inbound_message`)
+ * - outbound status updates (`*.sent`, `*.delivered`, `*.read`, `*.failed`)
+ * - account/template events (ignored)
+ *
+ * We dispatch based on `event_type`.
  */
+
+const STATUS_MAP: Record<
+  string,
+  'pending' | 'sent' | 'delivered' | 'read' | 'failed'
+> = {
+  queued: 'pending',
+  sending: 'pending',
+  sent: 'sent',
+  delivered: 'delivered',
+  read: 'read',
+  failed: 'failed',
+  undelivered: 'failed',
+};
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const verdict = verifyTelnyxSignature({
@@ -30,26 +50,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const payload = (body as { data?: { payload?: unknown } })?.data?.payload as
-    | {
-        from?: { phone_number: string } | string;
-        text?: { body?: string } | string;
-        media?: Array<{ url: string; content_type?: string }>;
-        id?: string;
-      }
-    | undefined;
+  const data = (body as { data?: { event_type?: string; payload?: unknown } })
+    ?.data;
+  const eventType = data?.event_type ?? '';
+  const payload = data?.payload;
+
   if (!payload) {
-    return Response.json(
-      { ok: false, error: 'missing payload' },
-      { status: 400 }
-    );
+    // Some Telnyx events (e.g. test pings) arrive with no payload. Accept.
+    return Response.json({ ok: true, skipped: true });
   }
 
-  const { from, text, media, id: telnyxId } = payload;
+  const isInbound =
+    /inbound/i.test(eventType) ||
+    /received/i.test(eventType) ||
+    eventType === '';
+  const isStatus =
+    /\.(sent|delivered|read|failed|message_status)/i.test(eventType);
+
+  if (isInbound && !isStatus) {
+    return handleInbound(payload, verdict.devMode);
+  }
+  if (isStatus) {
+    return handleStatus(payload, verdict.devMode);
+  }
+
+  // Unknown event — ack with 200 so Telnyx doesn't retry.
+  return Response.json({ ok: true, ignored: eventType });
+}
+
+async function handleInbound(payload: unknown, devMode: boolean) {
+  const p = payload as {
+    from?: { phone_number?: string } | string;
+    text?: { body?: string } | string;
+    media?: Array<{ url: string; content_type?: string }>;
+    id?: string;
+  };
+
   const fromPhone =
-    typeof from === 'string' ? from : from?.phone_number ?? null;
+    typeof p.from === 'string' ? p.from : p.from?.phone_number ?? null;
   const textBody =
-    typeof text === 'string' ? text : text?.body ?? null;
+    typeof p.text === 'string' ? p.text : p.text?.body ?? null;
+  const telnyxId = p.id;
+
   if (!fromPhone || !telnyxId) {
     return Response.json(
       { ok: false, error: 'missing from/id' },
@@ -71,12 +113,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const contentType = media?.[0]?.content_type;
+  const contentType = p.media?.[0]?.content_type;
   const mediaType = contentType?.startsWith('image')
     ? 'image'
     : contentType?.startsWith('audio')
       ? 'audio'
-      : media?.[0]
+      : p.media?.[0]
         ? 'document'
         : null;
 
@@ -84,7 +126,7 @@ export async function POST(req: NextRequest) {
     thread_id: thread.id,
     direction: 'inbound',
     body: textBody,
-    media_url: media?.[0]?.url ?? null,
+    media_url: p.media?.[0]?.url ?? null,
     media_type: mediaType,
     telnyx_id: telnyxId,
   });
@@ -98,5 +140,27 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', thread.id);
 
-  return Response.json({ ok: true, dev_mode: verdict.devMode });
+  return Response.json({ ok: true, kind: 'inbound', dev_mode: devMode });
+}
+
+async function handleStatus(payload: unknown, devMode: boolean) {
+  const p = payload as {
+    id?: string;
+    status?: string;
+    to?: Array<{ status?: string }>;
+  };
+  const telnyxId = p.id;
+  const rawStatus = p.to?.[0]?.status ?? p.status;
+  if (!telnyxId || !rawStatus) {
+    return Response.json(
+      { ok: false, error: 'missing fields' },
+      { status: 400 }
+    );
+  }
+  const supabase = createAdminClient();
+  await supabase
+    .from('ht_wa_messages')
+    .update({ status: STATUS_MAP[rawStatus] ?? 'sent' })
+    .eq('telnyx_id', telnyxId);
+  return Response.json({ ok: true, kind: 'status', dev_mode: devMode });
 }
