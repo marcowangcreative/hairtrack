@@ -343,7 +343,7 @@ a { color: inherit; text-decoration: none; }
 .activity-row .what { color: var(--fg-1); flex: 1; }
 .activity-row .what b { color: var(--fg); font-weight: 500; }
 
-/* ====== Timeline bars (used by dashboard mini-timeline) ====== */
+/* ====== Timeline (Gantt) ====== */
 .tl-bar {
   position: absolute;
   top: 8px; bottom: 8px;
@@ -356,10 +356,62 @@ a { color: inherit; text-decoration: none; }
   font-size: 11px;
   font-family: var(--font-mono);
   overflow: hidden;
+  white-space: nowrap;
 }
 .tl-bar.ok { background: var(--ok-dim); border-color: color-mix(in oklch, var(--ok) 50%, transparent); color: var(--ok); }
 .tl-bar.warn { background: var(--warn-dim); border-color: color-mix(in oklch, var(--warn) 50%, transparent); color: var(--warn); }
 .tl-bar.danger { background: var(--danger-dim); border-color: color-mix(in oklch, var(--danger) 50%, transparent); color: var(--danger); }
+
+.tl-page { min-width: 880px; }
+.tl-grid-head, .tl-grid-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  border-bottom: 1px solid var(--line);
+}
+.tl-cell-left {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+}
+.tl-cell-right {
+  position: relative;
+  min-height: 44px;
+}
+.tl-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-1);
+  padding: 8px 12px;
+}
+.tl-weeks {
+  position: absolute; inset: 0;
+  display: grid;
+}
+.tl-week {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  padding: 8px 6px;
+  border-right: 1px dashed var(--line);
+  text-align: left;
+}
+.tl-week:last-child { border-right: 0; }
+.tl-week-bg {
+  border-right: 1px dashed var(--line);
+}
+.tl-week-bg:last-child { border-right: 0; }
+.tl-today {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--accent);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 1;
+}
 
 /* ====== Misc ====== */
 .muted { color: var(--fg-3); }

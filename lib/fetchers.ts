@@ -519,6 +519,125 @@ export async function getInvoicesViewData(
   };
 }
 
+// =====================================================
+// TIMELINE VIEW
+// =====================================================
+
+export type TimelineItem = {
+  id: string;
+  kind: 'sample' | 'po';
+  label: string;
+  factoryId: string | null;
+  factoryShort: string | null;
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD
+  status: 'ok' | 'warn' | 'danger' | 'accent';
+  detail: string;
+};
+
+export type TimelineViewData = {
+  configured: boolean;
+  items: TimelineItem[];
+  factories: Factory[];
+};
+
+export async function getTimelineViewData(): Promise<TimelineViewData> {
+  if (!hasSupabaseEnv()) {
+    return { configured: false, items: [], factories: [] };
+  }
+
+  const supabase = createAdminClient();
+  const [samplesRes, posRes, factoriesRes] = await Promise.all([
+    supabase
+      .from('ht_samples')
+      .select('id, name, factory_id, stage, requested_at, eta, received_at'),
+    supabase
+      .from('ht_pos')
+      .select('id, factory_id, status, total, currency, placed_at, ship_by'),
+    supabase.from('ht_factories').select('*'),
+  ]);
+
+  const factories = (factoriesRes.data ?? []) as Factory[];
+  const factoryById = new Map(factories.map((f) => [f.id, f]));
+
+  type SampleRow = {
+    id: string;
+    name: string;
+    factory_id: string | null;
+    stage: string;
+    requested_at: string | null;
+    eta: string | null;
+    received_at: string | null;
+  };
+  type PoRow = {
+    id: string;
+    factory_id: string | null;
+    status: string;
+    total: number | null;
+    currency: string;
+    placed_at: string | null;
+    ship_by: string | null;
+  };
+
+  const items: TimelineItem[] = [];
+
+  for (const s of (samplesRes.data ?? []) as SampleRow[]) {
+    const start = s.requested_at;
+    const end = s.received_at ?? s.eta;
+    if (!start || !end) continue;
+    let status: TimelineItem['status'] = 'accent';
+    if (s.stage === 'approved') status = 'ok';
+    else if (s.stage === 'rejected') status = 'danger';
+    else if (s.stage === 'in_production' || s.stage === 'shipping') {
+      status = 'warn';
+    }
+    const fac = s.factory_id ? factoryById.get(s.factory_id) ?? null : null;
+    items.push({
+      id: `S:${s.id}`,
+      kind: 'sample',
+      label: s.name,
+      factoryId: s.factory_id,
+      factoryShort: fac?.short ?? fac?.name ?? null,
+      start,
+      end,
+      status,
+      detail: `Sample · ${s.stage.replace('_', ' ')}`,
+    });
+  }
+
+  for (const p of (posRes.data ?? []) as PoRow[]) {
+    const start = p.placed_at;
+    const end = p.ship_by;
+    if (!start || !end) continue;
+    let status: TimelineItem['status'] = 'accent';
+    if (p.status === 'received' || p.status === 'closed') status = 'ok';
+    else if (p.status === 'shipped' || p.status === 'in_production')
+      status = 'warn';
+    const fac = p.factory_id ? factoryById.get(p.factory_id) ?? null : null;
+    items.push({
+      id: `P:${p.id}`,
+      kind: 'po',
+      label: `${p.id}${p.total ? ` · $${Math.round(Number(p.total)).toLocaleString()}` : ''}`,
+      factoryId: p.factory_id,
+      factoryShort: fac?.short ?? fac?.name ?? null,
+      start,
+      end,
+      status,
+      detail: `PO · ${p.status.replace('_', ' ')}`,
+    });
+  }
+
+  // Sort: by factory name then start date.
+  items.sort((a, b) => {
+    if ((a.factoryShort ?? '') !== (b.factoryShort ?? '')) {
+      return (a.factoryShort ?? 'zzz').localeCompare(b.factoryShort ?? 'zzz');
+    }
+    return a.start.localeCompare(b.start);
+  });
+
+  return { configured: true, items, factories };
+}
+
 export async function getSamplePhotosBySample(
   sampleIds: string[]
 ): Promise<Record<string, SamplePhoto[]>> {
