@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity';
 
 const Body = z
   .object({
@@ -44,5 +45,17 @@ export async function POST(
     .eq('id', id);
 
   if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
+
+  await logActivity(supabase, {
+    actor_id: user.id,
+    kind: 'invoice.confirmed',
+    entity_type: 'invoice',
+    entity_id: id,
+    payload: {
+      total: parsed.data.total ?? null,
+      factory_id: parsed.data.factory_id ?? null,
+    },
+  });
+
   return Response.json({ ok: true });
 }

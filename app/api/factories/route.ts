@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { nextSequentialId } from '@/lib/ids';
+import { logActivity } from '@/lib/activity';
 
 const Body = z.object({
   name: z.string().min(1),
@@ -57,5 +58,14 @@ export async function POST(req: NextRequest) {
   if (error) {
     return Response.json({ ok: false, error: error.message }, { status: 500 });
   }
+
+  await logActivity(supabase, {
+    actor_id: user.id,
+    kind: 'factory.created',
+    entity_type: 'factory',
+    entity_id: data.id,
+    payload: { name: data.name },
+  });
+
   return Response.json({ ok: true, factory: data });
 }

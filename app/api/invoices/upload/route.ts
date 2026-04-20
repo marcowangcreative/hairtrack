@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity';
 
 const BUCKET = 'invoices';
 
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
   if (insertErr) {
     return Response.json({ ok: false, error: insertErr.message }, { status: 500 });
   }
+
+  await logActivity(supabase, {
+    actor_id: user.id,
+    kind: 'invoice.uploaded',
+    entity_type: 'invoice',
+    entity_id: invoice.id,
+    payload: { factory_id: factoryId, file_name: file.name },
+  });
 
   // TODO: enqueue OCR via Inngest instead of calling inline.
   // For now, kick off parse best-effort and return immediately.

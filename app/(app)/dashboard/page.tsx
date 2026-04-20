@@ -3,6 +3,27 @@ import { Icons } from '@/components/icons';
 import { getDashboardData, getAllFactories } from '@/lib/fetchers';
 import { SampleAddButton } from '@/components/sample-actions';
 
+const KIND_LABELS: Record<string, string> = {
+  'factory.created': 'Factory created',
+  'factory.updated': 'Factory updated',
+  'factory.deleted': 'Factory deleted',
+  'sample.created': 'Sample created',
+  'sample.updated': 'Sample updated',
+  'sample.stage_changed': 'Sample stage changed',
+  'sample.deleted': 'Sample deleted',
+  'po.created': 'PO created',
+  'po.updated': 'PO updated',
+  'po.status_changed': 'PO status changed',
+  'po.deleted': 'PO deleted',
+  'invoice.uploaded': 'Invoice uploaded',
+  'invoice.confirmed': 'Invoice confirmed',
+  'invoice.deleted': 'Invoice deleted',
+};
+
+function humanKind(kind: string): string {
+  return KIND_LABELS[kind] ?? kind;
+}
+
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   requested: { label: 'Requested', color: '#8a8a85' },
   in_production: { label: 'In production', color: 'oklch(0.78 0.14 75)' },
@@ -193,7 +214,7 @@ export default async function DashboardPage() {
                     <div className="time">{formatRelativeTime(a.created_at)}</div>
                     <div className="who">{a.entity_type ?? 'system'}</div>
                     <div className="what">
-                      <b>{a.kind}</b>
+                      <b>{humanKind(a.kind)}</b>
                       {a.entity_id ? ` · ${a.entity_id}` : null}
                     </div>
                   </div>

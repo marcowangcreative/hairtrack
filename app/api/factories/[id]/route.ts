@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity';
 
 const PatchBody = z.object({
   name: z.string().min(1).optional(),
@@ -54,6 +55,15 @@ export async function PATCH(
   if (error) {
     return Response.json({ ok: false, error: error.message }, { status: 500 });
   }
+
+  await logActivity(supabase, {
+    actor_id: user.id,
+    kind: 'factory.updated',
+    entity_type: 'factory',
+    entity_id: id,
+    payload: { changed: Object.keys(parsed.data) },
+  });
+
   return Response.json({ ok: true, factory: data });
 }
 
@@ -75,5 +85,13 @@ export async function DELETE(
   if (error) {
     return Response.json({ ok: false, error: error.message }, { status: 500 });
   }
+
+  await logActivity(supabase, {
+    actor_id: user.id,
+    kind: 'factory.deleted',
+    entity_type: 'factory',
+    entity_id: id,
+  });
+
   return Response.json({ ok: true });
 }
