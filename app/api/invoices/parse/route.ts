@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
   const { data: inv, error } = await supabase
-    .from('invoices')
+    .from('ht_invoices')
     .select('*')
     .eq('id', invoiceId)
     .single();
@@ -68,7 +68,7 @@ Return ONLY JSON, no prose.`,
 
   const first = msg.content[0];
   if (first.type !== 'text') {
-    await supabase.from('invoices').update({ parse_status: 'failed' }).eq('id', invoiceId);
+    await supabase.from('ht_invoices').update({ parse_status: 'failed' }).eq('id', invoiceId);
     return Response.json({ ok: false, error: 'non-text response' }, { status: 502 });
   }
 
@@ -78,14 +78,14 @@ Return ONLY JSON, no prose.`,
     json = Extraction.parse(JSON.parse(raw));
   } catch (e) {
     await supabase
-      .from('invoices')
+      .from('ht_invoices')
       .update({ parse_status: 'failed', raw_extraction: { raw: first.text } })
       .eq('id', invoiceId);
     return Response.json({ ok: false, error: (e as Error).message }, { status: 502 });
   }
 
   await supabase
-    .from('invoices')
+    .from('ht_invoices')
     .update({
       parse_status: 'parsed',
       invoice_number: json.invoice_number ?? null,
@@ -102,7 +102,7 @@ Return ONLY JSON, no prose.`,
     .eq('id', invoiceId);
 
   if (json.line_items?.length) {
-    await supabase.from('invoice_line_items').insert(
+    await supabase.from('ht_invoice_line_items').insert(
       json.line_items.map((li, i) => ({
         invoice_id: invoiceId,
         sku: li.sku ?? null,

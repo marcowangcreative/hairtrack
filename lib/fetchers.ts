@@ -25,10 +25,10 @@ export async function getSidebarCounts() {
     const supabase = createAdminClient();
 
     const [factories, samples, threads, invoices] = await Promise.all([
-      supabase.from('factories').select('id', { count: 'exact', head: true }),
-      supabase.from('samples').select('id', { count: 'exact', head: true }),
-      supabase.from('wa_threads').select('unread_count'),
-      supabase.from('invoices').select('parse_status'),
+      supabase.from('ht_factories').select('id', { count: 'exact', head: true }),
+      supabase.from('ht_samples').select('id', { count: 'exact', head: true }),
+      supabase.from('ht_wa_threads').select('unread_count'),
+      supabase.from('ht_invoices').select('parse_status'),
     ]);
 
     const whatsappUnread =
@@ -52,7 +52,7 @@ export async function getPinnedFactories() {
   try {
     const supabase = createAdminClient();
     const { data } = await supabase
-      .from('factories')
+      .from('ht_factories')
       .select('id, short, swatch')
       .eq('pinned', true)
       .order('name')
@@ -102,12 +102,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     const supabase = createAdminClient();
 
     const [factories, samples, threads, invoices, activity] = await Promise.all([
-      supabase.from('factories').select('status'),
-      supabase.from('samples').select('stage'),
-      supabase.from('wa_threads').select('unread_count'),
-      supabase.from('invoices').select('parse_status, total'),
+      supabase.from('ht_factories').select('status'),
+      supabase.from('ht_samples').select('stage'),
+      supabase.from('ht_wa_threads').select('unread_count'),
+      supabase.from('ht_invoices').select('parse_status, total'),
       supabase
-        .from('activity')
+        .from('ht_activity')
         .select('id, kind, entity_type, entity_id, created_at, payload')
         .order('created_at', { ascending: false })
         .limit(10),

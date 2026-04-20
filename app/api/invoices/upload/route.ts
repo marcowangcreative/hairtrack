@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
   const { data: invoice, error: insertErr } = await supabase
-    .from('invoices')
+    .from('ht_invoices')
     .insert({
       factory_id: factoryId,
       file_url: publicUrl,

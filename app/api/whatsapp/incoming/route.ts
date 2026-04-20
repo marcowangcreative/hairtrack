@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
 
   const { data: thread, error: threadErr } = await supabase
-    .from('wa_threads')
+    .from('ht_wa_threads')
     .upsert({ wa_phone: fromPhone }, { onConflict: 'wa_phone' })
     .select()
     .single();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: threadErr?.message }, { status: 500 });
   }
 
-  await supabase.from('wa_messages').insert({
+  await supabase.from('ht_wa_messages').insert({
     thread_id: thread.id,
     direction: 'inbound',
     body: textBody,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   });
 
   await supabase
-    .from('wa_threads')
+    .from('ht_wa_threads')
     .update({
       last_message_at: new Date().toISOString(),
       last_message_preview: textBody?.slice(0, 120) ?? null,

@@ -5,7 +5,7 @@
 -- =====================================================
 -- FACTORIES
 -- =====================================================
-insert into factories (id, name, short, city, country, specialty, status, whatsapp, alibaba_url, contact_name, contact_role, moq, lead_time_days, payment_terms, swatch, notes, pinned) values
+insert into ht_factories (id, name, short, city, country, specialty, status, whatsapp, alibaba_url, contact_name, contact_role, moq, lead_time_days, payment_terms, swatch, notes, pinned) values
   ('FAC-018','Qingdao Meilong Hair Industry','Meilong','Qingdao, Shandong','CN','Raw virgin bundles, closures','active','+86 138 1042 7788','meilonghair.alibaba.com','Lin Wei','Sales lead',50,18,'30% T/T, 70% B/L','#1a1512','Primary bundle supplier. Consistent single-donor quality. Slower on custom lace work.',true),
   ('FAC-024','Xuchang Arclight Wigs Co.','Arclight','Xuchang, Henan','CN','HD lace frontals, full wigs','active','+86 159 3722 0411','arclightwigs.alibaba.com','Helen Zhao','Account mgr',30,25,'50/50 T/T','#3d2b1f','Best HD lace source. Strict on MOQ. Ships via SF Express.',true),
   ('FAC-031','Hebei Crownroot Hair Mfg.','Crownroot','Xingtai, Hebei','CN','Clip-ins, tape-ins, ponytails','active','+86 177 0319 2256','crownroot.alibaba.com','Mei Chen','Sales',100,22,'30/70 T/T','#6b4a32','Price-competitive on clip-ins. Packaging needs QC every batch.',false),
@@ -18,7 +18,7 @@ on conflict (id) do nothing;
 -- =====================================================
 -- SAMPLES (prototype's "shipped" → schema "shipping")
 -- =====================================================
-insert into samples (id, factory_id, name, stage, requested_at, eta, notes) values
+insert into ht_samples (id, factory_id, name, stage, requested_at, eta, notes) values
   ('S-104','FAC-018','20" Raw SE Asian bundle, natural 1B','approved','2026-04-02','2026-04-28','Final batch selected for launch tier 1.'),
   ('S-108','FAC-024','22" HD lace frontal 13x6, density 180%','in_production','2026-04-09','2026-05-06',null),
   ('S-109','FAC-031','Clip-in set 7pc, 18" honey balayage','rejected','2026-03-28',null,'Tone ran orange. Revised swatch sent Apr 14.'),
@@ -36,7 +36,7 @@ on conflict (id) do nothing;
 -- =====================================================
 -- WHATSAPP THREADS (wa_phone is unique)
 -- =====================================================
-insert into wa_threads (factory_id, wa_phone, name, pinned, unread_count, last_message_at, last_message_preview) values
+insert into ht_wa_threads (factory_id, wa_phone, name, pinned, unread_count, last_message_at, last_message_preview) values
   ('FAC-018','+8613810427788','Lin Wei · Meilong',true,2,'2026-04-18 09:41:00+00','Sure, we can pull 20" & 22" from the same donor. Sending photos now.'),
   ('FAC-031','+8617703192256','Mei Chen · Crownroot',false,4,'2026-04-18 08:20:00+00','Payment confirmation received for PO-2041, thank you!'),
   ('FAC-024','+8615937220411','Helen Zhao · Arclight',false,0,'2026-04-17 15:40:00+00','You: Confirmed, PO-2043 signed. Sending 50% deposit today.'),
@@ -49,9 +49,9 @@ on conflict (wa_phone) do nothing;
 -- =====================================================
 -- WHATSAPP MESSAGES (telnyx_id partial unique → idempotent)
 -- =====================================================
-insert into wa_messages (thread_id, direction, body, media_type, telnyx_id, status, sent_at)
+insert into ht_wa_messages (thread_id, direction, body, media_type, telnyx_id, status, sent_at)
 select t.id, v.direction, v.body, v.media_type, v.telnyx_id, v.status, v.sent_at::timestamptz
-from wa_threads t
+from ht_wa_threads t
 join (values
   ('+8613810427788','inbound','Hi! Following up on sample S-104. Photos attached of the final batch.',null,'seed-w1-1','delivered','2026-04-17 14:22:00+00'),
   ('+8613810427788','inbound','Final batch — 20" natural 1B, cuticle-aligned','image','seed-w1-2','delivered','2026-04-17 14:22:30+00'),
@@ -89,7 +89,7 @@ on conflict (telnyx_id) where telnyx_id is not null do nothing;
 -- INVOICES  (prototype statuses: parsed/approved/needs_review
 --           → schema: parsed/confirmed/parsed)
 -- =====================================================
-insert into invoices (factory_id, file_url, source, parse_status, parse_confidence, invoice_number, invoice_date, due_date, currency, subtotal, shipping, tax, total, payment_terms) values
+insert into ht_invoices (factory_id, file_url, source, parse_status, parse_confidence, invoice_number, invoice_date, due_date, currency, subtotal, shipping, tax, total, payment_terms) values
   ('FAC-024','https://example.invalid/arclight-PO2043-invoice.pdf','upload','parsed',0.97,'AR-2026-0413','2026-04-17','2026-05-17','USD',12000,320,160,12480,'50/50 T/T'),
   ('FAC-031','https://example.invalid/crownroot-PO2041-invoice.pdf','upload','confirmed',0.94,'CR-0412-118','2026-04-12','2026-05-12','USD',4650,120,80,4850,'30/70 T/T'),
   ('FAC-018','https://example.invalid/meilong-proforma-20Apr.pdf','upload','parsed',0.82,'ML-20260420','2026-04-20','2026-05-20','USD',8300,280,140,8720,'30/70 T/T'),
@@ -100,7 +100,7 @@ on conflict do nothing;
 -- =====================================================
 -- ACTIVITY (latest first)
 -- =====================================================
-insert into activity (kind, entity_type, entity_id, payload, created_at) values
+insert into ht_activity (kind, entity_type, entity_id, payload, created_at) values
   ('wa.message', 'thread', 'FAC-018', '{"preview":"Confirmed single-donor 20\" & 22\"."}'::jsonb, '2026-04-18 09:41:00+00'),
   ('invoice.confirmed', 'invoice', 'AR-2026-0413', '{"total":12480}'::jsonb, '2026-04-18 09:12:00+00'),
   ('invoice.parsed', 'invoice', 'AR-2026-0413', '{"confidence":0.97}'::jsonb, '2026-04-18 08:30:00+00'),

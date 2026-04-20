@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
   await supabase
-    .from('wa_messages')
+    .from('ht_wa_messages')
     .update({ status: MAP[status] ?? 'sent' })
     .eq('telnyx_id', telnyxId);
 

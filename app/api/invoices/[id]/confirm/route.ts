@@ -34,7 +34,7 @@ export async function POST(
   if (!user) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
 
   const { error } = await supabase
-    .from('invoices')
+    .from('ht_invoices')
     .update({
       ...parsed.data,
       parse_status: 'confirmed',

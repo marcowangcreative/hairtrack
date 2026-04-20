@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
   const telnyxId = json?.data?.id as string | undefined;
 
-  await supabase.from('wa_messages').insert({
+  await supabase.from('ht_wa_messages').insert({
     thread_id,
     direction: 'outbound',
     body: text,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   });
 
   await supabase
-    .from('wa_threads')
+    .from('ht_wa_threads')
     .update({
       last_message_at: new Date().toISOString(),
       last_message_preview: text.slice(0, 120),
