@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Toolbar } from '@/components/toolbar';
 import { Icons } from '@/components/icons';
 import { FactoryList } from '@/components/factory-list';
+import { FactoryGrid } from '@/components/factory-grid';
+import { FactoryMap } from '@/components/factory-map';
 import { StagePill, InvoiceStatusPill, FactoryStatusPill } from '@/components/pills';
 import { getFactoriesViewData } from '@/lib/fetchers';
 import type { FactoriesViewData } from '@/lib/fetchers';
@@ -14,6 +16,9 @@ import {
   SampleAddButton,
   SampleEditButton,
 } from '@/components/sample-actions';
+
+const VIEWS = ['list', 'grid', 'map'] as const;
+type View = (typeof VIEWS)[number];
 
 const SUBTABS = [
   { id: 'overview', label: 'Overview' },
@@ -33,13 +38,24 @@ function toDollar(n: number | null | undefined): string {
 export default async function FactoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; tab?: string }>;
+  searchParams: Promise<{ id?: string; tab?: string; view?: string }>;
 }) {
   const params = await searchParams;
   const tab: Tab =
     (SUBTABS.find((t) => t.id === params.tab)?.id as Tab) ?? 'overview';
+  const view: View = (VIEWS as readonly string[]).includes(params.view ?? '')
+    ? (params.view as View)
+    : 'list';
 
   const data = await getFactoriesViewData(params.id);
+
+  const viewHref = (v: View) => {
+    const parts: string[] = [];
+    if (v !== 'list') parts.push(`view=${v}`);
+    if (params.id && v === 'list') parts.push(`id=${encodeURIComponent(params.id)}`);
+    if (params.tab && v === 'list') parts.push(`tab=${params.tab}`);
+    return `/factories${parts.length ? `?${parts.join('&')}` : ''}`;
+  };
 
   return (
     <>
@@ -48,17 +64,29 @@ export default async function FactoriesPage({
         right={
           <>
             <div className="seg">
-              <button className="on">
+              <Link
+                href={viewHref('list')}
+                scroll={false}
+                className={view === 'list' ? 'on' : ''}
+              >
                 <Icons.list /> List
-              </button>
-              <button disabled title="Coming soon">
+              </Link>
+              <Link
+                href={viewHref('grid')}
+                scroll={false}
+                className={view === 'grid' ? 'on' : ''}
+              >
                 <Icons.grid /> Grid
-              </button>
-              <button disabled title="Coming soon">
+              </Link>
+              <Link
+                href={viewHref('map')}
+                scroll={false}
+                className={view === 'map' ? 'on' : ''}
+              >
                 <Icons.globe /> Map
-              </button>
+              </Link>
             </div>
-            <button className="btn" disabled>
+            <button className="btn" disabled title="Coming soon">
               <Icons.filter /> Filter
             </button>
             <FactoryAddButton />
@@ -80,6 +108,14 @@ export default async function FactoriesPage({
             No factories yet. Run <code>seed.sql</code> in the Supabase SQL editor
             to load demo data.
           </div>
+        </div>
+      ) : view === 'grid' ? (
+        <div className="canvas">
+          <FactoryGrid factories={data.factories} />
+        </div>
+      ) : view === 'map' ? (
+        <div className="canvas" style={{ padding: 0 }}>
+          <FactoryMap factories={data.factories} />
         </div>
       ) : (
         <div className="canvas" style={{ display: 'flex' }}>
