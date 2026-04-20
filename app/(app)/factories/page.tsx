@@ -5,6 +5,15 @@ import { FactoryList } from '@/components/factory-list';
 import { StagePill, InvoiceStatusPill, FactoryStatusPill } from '@/components/pills';
 import { getFactoriesViewData } from '@/lib/fetchers';
 import type { FactoriesViewData } from '@/lib/fetchers';
+import {
+  FactoryAddButton,
+  FactoryEditButton,
+} from '@/components/factory-actions';
+import { PoAddButton } from '@/components/po-actions';
+import {
+  SampleAddButton,
+  SampleEditButton,
+} from '@/components/sample-actions';
 
 const SUBTABS = [
   { id: 'overview', label: 'Overview' },
@@ -52,9 +61,7 @@ export default async function FactoriesPage({
             <button className="btn" disabled>
               <Icons.filter /> Filter
             </button>
-            <button className="btn primary" disabled>
-              <Icons.plus /> Add factory
-            </button>
+            <FactoryAddButton />
           </>
         }
       />
@@ -83,7 +90,11 @@ export default async function FactoriesPage({
               tab={tab}
             />
             {data.selected && (
-              <FactoryDetail selected={data.selected} tab={tab} />
+              <FactoryDetail
+                selected={data.selected}
+                tab={tab}
+                allFactories={data.factories}
+              />
             )}
           </div>
         </div>
@@ -95,9 +106,11 @@ export default async function FactoriesPage({
 function FactoryDetail({
   selected: sel,
   tab,
+  allFactories,
 }: {
   selected: NonNullable<FactoriesViewData['selected']>;
   tab: Tab;
+  allFactories: FactoriesViewData['factories'];
 }) {
   const invoicesForTab = sel.invoices.length;
 
@@ -143,9 +156,12 @@ function FactoryDetail({
               <Icons.link /> Alibaba
             </a>
           )}
-          <button className="btn primary" disabled>
-            <Icons.plus /> New PO
-          </button>
+          <FactoryEditButton factory={sel} />
+          <PoAddButton
+            factories={allFactories}
+            samples={sel.samples}
+            defaultFactoryId={sel.id}
+          />
         </div>
       </div>
 
@@ -213,7 +229,13 @@ function FactoryDetail({
       </div>
 
       {tab === 'overview' && <OverviewTab selected={sel} />}
-      {tab === 'samples' && <SamplesTab samples={sel.samples} />}
+      {tab === 'samples' && (
+        <SamplesTab
+          samples={sel.samples}
+          factoryId={sel.id}
+          allFactories={allFactories}
+        />
+      )}
       {tab === 'orders' && <OrdersTab invoices={sel.invoices} />}
       {tab === 'chat' && <ChatTab thread={sel.thread} factoryId={sel.id} />}
       {tab === 'notes' && (
@@ -384,16 +406,34 @@ function OverviewTab({
 
 function SamplesTab({
   samples,
+  factoryId,
+  allFactories,
 }: {
   samples: FactoriesViewData['selected'] extends infer S
     ? S extends { samples: infer T }
       ? T
       : never
     : never;
+  factoryId: string;
+  allFactories: FactoriesViewData['factories'];
 }) {
   return (
     <div className="section">
-      <h3>All samples · {samples.length}</h3>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 10,
+        }}
+      >
+        <h3 style={{ margin: 0 }}>All samples · {samples.length}</h3>
+        <div className="spacer" style={{ flex: 1 }} />
+        <SampleAddButton
+          factories={allFactories}
+          defaultFactoryId={factoryId}
+        />
+      </div>
       {samples.length === 0 ? (
         <div className="muted" style={{ fontSize: 12 }}>
           No samples.
@@ -408,6 +448,7 @@ function SamplesTab({
               <th>Requested</th>
               <th>ETA</th>
               <th>Received</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -423,6 +464,9 @@ function SamplesTab({
                 <td className="mono">{s.requested_at ?? '—'}</td>
                 <td className="mono">{s.eta ?? '—'}</td>
                 <td className="mono">{s.received_at ?? '—'}</td>
+                <td style={{ textAlign: 'right' }}>
+                  <SampleEditButton sample={s} factories={allFactories} />
+                </td>
               </tr>
             ))}
           </tbody>

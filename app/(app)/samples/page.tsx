@@ -3,7 +3,8 @@ import { Toolbar } from '@/components/toolbar';
 import { Icons } from '@/components/icons';
 import { StagePill } from '@/components/pills';
 import { getSamplesViewData } from '@/lib/fetchers';
-import type { SampleStage } from '@/lib/types/db';
+import type { Factory, SampleStage } from '@/lib/types/db';
+import { SampleAddButton, SampleEditButton } from '@/components/sample-actions';
 
 type View = 'kanban' | 'list';
 
@@ -61,9 +62,9 @@ export default async function SamplesPage({
             <button className="btn" disabled title="Coming soon">
               <Icons.filter /> Filter
             </button>
-            <button className="btn primary" disabled title="Coming soon">
-              <Icons.plus /> New sample
-            </button>
+            <SampleAddButton
+              factories={Object.values(data.factoriesById) as Factory[]}
+            />
           </>
         }
       />
@@ -79,7 +80,10 @@ export default async function SamplesPage({
         ) : view === 'kanban' ? (
           <KanbanView samples={data.samples} />
         ) : (
-          <ListView samples={data.samples} />
+          <ListView
+            samples={data.samples}
+            factories={Object.values(data.factoriesById) as Factory[]}
+          />
         )}
       </div>
     </>
@@ -176,7 +180,13 @@ function KCard({ sample: s }: { sample: SampleWithFactory }) {
   );
 }
 
-function ListView({ samples }: { samples: SampleWithFactory[] }) {
+function ListView({
+  samples,
+  factories,
+}: {
+  samples: SampleWithFactory[];
+  factories: Factory[];
+}) {
   return (
     <div className="sample-list">
       <div className="row head">
@@ -189,18 +199,18 @@ function ListView({ samples }: { samples: SampleWithFactory[] }) {
         <div></div>
       </div>
       {samples.map((s) => (
-        <Link
-          key={s.id}
-          href={
-            s.factory_id
-              ? `/factories?id=${s.factory_id}&tab=samples`
-              : '/samples'
-          }
-          className="row"
-        >
-          <div className="mono" style={{ color: 'var(--fg-3)' }}>
+        <div key={s.id} className="row">
+          <Link
+            href={
+              s.factory_id
+                ? `/factories?id=${s.factory_id}&tab=samples`
+                : '/samples'
+            }
+            className="mono"
+            style={{ color: 'var(--fg-3)' }}
+          >
             {s.id}
-          </div>
+          </Link>
           <div>
             <div style={{ color: 'var(--fg)' }}>{s.name}</div>
             {s.factory?.swatch && (
@@ -229,10 +239,10 @@ function ListView({ samples }: { samples: SampleWithFactory[] }) {
           <div className="mono" style={{ color: 'var(--fg-2)' }}>
             {s.eta ? new Date(s.eta).toLocaleDateString() : '—'}
           </div>
-          <div style={{ color: 'var(--fg-3)' }}>
-            <Icons.more />
+          <div>
+            <SampleEditButton sample={s} factories={factories} />
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );

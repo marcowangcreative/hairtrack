@@ -109,6 +109,30 @@ export interface InvoiceLineItem {
   ordinal: number | null;
 }
 
+export type PoStatus =
+  | 'draft'
+  | 'sent'
+  | 'confirmed'
+  | 'in_production'
+  | 'shipped'
+  | 'received'
+  | 'closed';
+
+export interface Po {
+  id: string;
+  factory_id: string | null;
+  sample_id: string | null;
+  status: PoStatus;
+  total: number | null;
+  currency: string;
+  deposit_paid: boolean;
+  balance_paid: boolean;
+  placed_at: string | null;
+  ship_by: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface SamplePhoto {
   id: string;
   sample_id: string;
