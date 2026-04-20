@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icons } from './icons';
+import { ThemeToggle } from './theme-toggle';
 
 type IconComponent = (typeof Icons)[keyof typeof Icons];
 
@@ -108,22 +109,25 @@ export function Sidebar({ counts, pinnedFactories, user }: Props) {
           </div>
           <div className="role">{user?.role ?? 'not signed in'}</div>
         </div>
-        {user && (
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="btn ghost sm"
-              title="Sign out"
-              style={{
-                padding: '0 6px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-              }}
-            >
-              out
-            </button>
-          </form>
-        )}
+        <div style={{ display: 'flex', gap: 4 }}>
+          <ThemeToggle />
+          {user && (
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                className="btn ghost sm"
+                title="Sign out"
+                style={{
+                  padding: '0 6px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                }}
+              >
+                out
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -26,6 +26,18 @@ export const metadata: Metadata = {
   description: 'Factory ops tracker for hairline launches.',
 };
 
+// Runs before React hydrates — reads saved preference or falls back to
+// light mode. Keeps `<html class="light">` until the user flips the toggle.
+const themeInitScript = `(() => {
+  try {
+    const saved = localStorage.getItem('ht.theme');
+    const theme = saved === 'dark' ? 'dark' : 'light';
+    if (theme === 'light') document.documentElement.classList.add('light');
+  } catch (_) {
+    document.documentElement.classList.add('light');
+  }
+})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -34,6 +46,9 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -91,6 +91,20 @@ export async function getSidebarCounts() {
   }
 }
 
+export async function getAllFactories(): Promise<Factory[]> {
+  if (!hasSupabaseEnv()) return [];
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('ht_factories')
+      .select('*')
+      .order('name');
+    return (data ?? []) as Factory[];
+  } catch {
+    return [];
+  }
+}
+
 export async function getPinnedFactories() {
   if (!hasSupabaseEnv()) return [];
   try {

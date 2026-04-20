@@ -1,6 +1,7 @@
 import { Toolbar } from '@/components/toolbar';
 import { Icons } from '@/components/icons';
-import { getDashboardData } from '@/lib/fetchers';
+import { getDashboardData, getAllFactories } from '@/lib/fetchers';
+import { SampleAddButton } from '@/components/sample-actions';
 
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   requested: { label: 'Requested', color: '#8a8a85' },
@@ -25,7 +26,10 @@ function formatRelativeTime(iso: string) {
 }
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, factories] = await Promise.all([
+    getDashboardData(),
+    getAllFactories(),
+  ]);
   const totalSamples = data.samplesByStage.reduce((a, s) => a + s.count, 0);
 
   const stats = [
@@ -59,11 +63,13 @@ export default async function DashboardPage() {
         crumbs={['Workspace', 'Dashboard']}
         right={
           <>
-            <button className="btn">
-              <Icons.plus /> New sample
-            </button>
-            <button className="btn primary">
-              <Icons.sparkle /> Ask Hair Track
+            <SampleAddButton factories={factories} />
+            <button
+              className="btn"
+              disabled
+              title="Natural-language queries over your data — not wired yet"
+            >
+              <Icons.sparkle /> Ask Hair Track (soon)
             </button>
           </>
         }
@@ -196,22 +202,6 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="card" style={{ gridColumn: '1 / -1' }}>
-            <div className="head">
-              <div className="title">Launch runway</div>
-              <div className="sub">Timeline preview</div>
-              <div className="spacer" />
-              <a href="/timeline" className="btn ghost sm">
-                <Icons.calendar /> Open timeline
-              </a>
-            </div>
-            <div className="body">
-              <div className="empty-state">
-                Timeline view coming next — will read from <code>samples</code> +{' '}
-                <code>pos</code> date fields.
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </>
