@@ -7,7 +7,6 @@ import { FactoryMap } from '@/components/factory-map';
 import { FactoryFilters } from '@/components/factory-filters';
 import { StagePill, InvoiceStatusPill, FactoryStatusPill } from '@/components/pills';
 import { getFactoriesViewData } from '@/lib/fetchers';
-import { loadWorldTopology } from '@/lib/world-topology';
 import { applyFactoryFilters, parseFactoryFilters } from '@/lib/factory-filters';
 import type { FactoriesViewData } from '@/lib/fetchers';
 import {
@@ -62,10 +61,7 @@ export default async function FactoriesPage({
 
   const filters = parseFactoryFilters(params);
 
-  const [data, topology] = await Promise.all([
-    getFactoriesViewData(params.id),
-    view === 'map' ? loadWorldTopology() : Promise.resolve(null),
-  ]);
+  const data = await getFactoriesViewData(params.id);
 
   const filtered = applyFactoryFilters(data.factories, filters);
   const countries = Array.from(
@@ -155,7 +151,7 @@ export default async function FactoriesPage({
         </div>
       ) : view === 'map' ? (
         <div className="canvas" style={{ padding: 0 }}>
-          <FactoryMap factories={filtered} topology={topology!} />
+          <FactoryMap factories={filtered} />
         </div>
       ) : (
         <div className="canvas" style={{ display: 'flex' }}>
