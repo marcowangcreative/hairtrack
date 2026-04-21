@@ -1,8 +1,6 @@
 'use client';
 
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster';
 
 import L from 'leaflet';
 import Link from 'next/link';
@@ -14,7 +12,6 @@ import {
   TileLayer,
   useMap,
 } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { FactoryListItem } from '@/lib/fetchers';
 import { lookupCoords } from '@/lib/geo';
@@ -63,16 +60,6 @@ function makePinIcon(p: Pin) {
     `,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
-  });
-}
-
-function makeClusterIcon(cluster: L.MarkerCluster) {
-  const count = cluster.getChildCount();
-  const size = count < 10 ? 32 : count < 50 ? 38 : 46;
-  return L.divIcon({
-    className: 'ht-cluster',
-    html: `<div class="ht-cluster-bubble" style="width:${size}px;height:${size}px"><span>${count}</span></div>`,
-    iconSize: [size, size],
   });
 }
 
@@ -155,52 +142,44 @@ export default function FactoryMapLeaflet({
             maxZoom={layerCfg.maxZoom}
           />
 
-          <MarkerClusterGroup
-            chunkedLoading
-            iconCreateFunction={makeClusterIcon}
-            showCoverageOnHover={false}
-            spiderfyOnMaxZoom
-            maxClusterRadius={45}
-          >
-            {pins.map((p) => (
-              <Marker
-                key={p.id}
-                position={[p.lat, p.lng]}
-                icon={makePinIcon(p)}
-                eventHandlers={{
-                  mouseover: () => setHovered(p.id),
-                  mouseout: () => setHovered(null),
-                }}
-              >
-                <Popup>
-                  <div className="ht-pop">
-                    <div className="ht-pop-row">
-                      <span
-                        className="ht-pop-sw"
-                        style={{ background: p.swatch ?? '#7c5cff' }}
-                      />
-                      <strong>{p.name}</strong>
-                    </div>
-                    <div className="ht-pop-meta">
-                      {p.city ?? '—'}
-                      {p.country ? `, ${p.country}` : ''}
-                    </div>
-                    {p.lifetimeSpend > 0 && (
-                      <div className="ht-pop-meta">
-                        ${(p.lifetimeSpend / 1000).toFixed(1)}k lifetime
-                      </div>
-                    )}
-                    <Link
-                      href={`/factories?id=${encodeURIComponent(p.id)}&view=list`}
-                      className="ht-pop-open"
-                    >
-                      Open factory →
-                    </Link>
+          {pins.map((p) => (
+            <Marker
+              key={p.id}
+              position={[p.lat, p.lng]}
+              icon={makePinIcon(p)}
+              eventHandlers={{
+                mouseover: () => setHovered(p.id),
+                mouseout: () => setHovered(null),
+              }}
+            >
+              <Popup>
+                <div className="ht-pop">
+                  <div className="ht-pop-row">
+                    <span
+                      className="ht-pop-sw"
+                      style={{ background: p.swatch ?? '#7c5cff' }}
+                    />
+                    <strong>{p.name}</strong>
                   </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MarkerClusterGroup>
+                  <div className="ht-pop-meta">
+                    {p.city ?? '—'}
+                    {p.country ? `, ${p.country}` : ''}
+                  </div>
+                  {p.lifetimeSpend > 0 && (
+                    <div className="ht-pop-meta">
+                      ${(p.lifetimeSpend / 1000).toFixed(1)}k lifetime
+                    </div>
+                  )}
+                  <Link
+                    href={`/factories?id=${encodeURIComponent(p.id)}&view=list`}
+                    className="ht-pop-open"
+                  >
+                    Open factory →
+                  </Link>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
 
           <FlyController target={target} />
         </MapContainer>

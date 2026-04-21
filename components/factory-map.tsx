@@ -1,13 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { FactoryListItem } from '@/lib/fetchers';
 
-// Leaflet touches `window` at import time, so the actual map
-// implementation must be loaded only on the client.
+// Leaflet touches `window` at import time, so we must only load the
+// actual map implementation on the client. We combine `next/dynamic`
+// with `ssr: false` AND a mount guard to be bulletproof across
+// Turbopack/Webpack.
 const FactoryMapLeaflet = dynamic(() => import('./factory-map-leaflet'), {
   ssr: false,
-  loading: () => (
+});
+
+function MapSkeleton() {
+  return (
     <div className="factory-map-wrap">
       <div
         className="factory-map"
@@ -21,9 +27,15 @@ const FactoryMapLeaflet = dynamic(() => import('./factory-map-leaflet'), {
         <div className="legend-title">Factories</div>
       </div>
     </div>
-  ),
-});
+  );
+}
 
 export function FactoryMap({ factories }: { factories: FactoryListItem[] }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <MapSkeleton />;
   return <FactoryMapLeaflet factories={factories} />;
 }
