@@ -31,21 +31,35 @@ type Pin = {
 
 type LayerKey = 'streets' | 'satellite';
 
+// English reference labels overlay (transparent) - place names in Latin
+// script worldwide. Used on top of satellite imagery.
+const LABELS_EN =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+
 const LAYERS: Record<
   LayerKey,
-  { url: string; attribution: string; maxZoom: number }
+  {
+    url: string;
+    attribution: string;
+    maxZoom: number;
+    labelOverlay?: string;
+  }
 > = {
+  // Esri World Street Map - English labels worldwide, no API key.
   streets: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      'Tiles &copy; Esri &mdash; Sources: HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, (c) OpenStreetMap contributors, GIS User Community',
     maxZoom: 19,
   },
+  // Esri World Imagery with an English labels overlay so streets and
+  // cities are readable over satellite.
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution:
       'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
     maxZoom: 19,
+    labelOverlay: LABELS_EN,
   },
 };
 
@@ -141,6 +155,15 @@ export default function FactoryMapLeaflet({
             attribution={layerCfg.attribution}
             maxZoom={layerCfg.maxZoom}
           />
+          {layerCfg.labelOverlay && (
+            <TileLayer
+              key={`${layer}-labels`}
+              url={layerCfg.labelOverlay}
+              maxZoom={layerCfg.maxZoom}
+              zIndex={400}
+              opacity={0.9}
+            />
+          )}
 
           {pins.map((p) => (
             <Marker
