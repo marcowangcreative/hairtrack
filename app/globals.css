@@ -1075,11 +1075,53 @@ a { color: inherit; text-decoration: none; }
   min-height: 520px;
 }
 .factory-map {
+  position: relative;
   background: var(--bg-1);
   border-right: 1px solid var(--line);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   min-height: 520px;
+}
+.map-controls {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex; flex-direction: column;
+  gap: 1px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.map-btn {
+  width: 28px; height: 28px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+}
+.map-btn:last-child { border-bottom: 0; }
+.map-btn:hover:not(:disabled) { background: var(--bg-2); }
+.map-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.map-hint {
+  position: absolute;
+  bottom: 8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--fg-3);
+  background: color-mix(in oklch, var(--bg) 85%, transparent);
+  padding: 3px 8px;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 4;
+  white-space: nowrap;
 }
 .map-legend {
   display: flex; flex-direction: column;
@@ -1101,14 +1143,44 @@ a { color: inherit; text-decoration: none; }
   flex: 1;
 }
 .legend-row {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px 0 0;
   border-bottom: 1px solid var(--line);
-  cursor: pointer;
   min-width: 0;
 }
 .legend-row:hover, .legend-row.active { background: var(--bg-1); }
-.legend-row.dim { opacity: 0.65; }
+.legend-row.dim {
+  opacity: 0.65;
+  padding: 8px 12px;
+  gap: 9px;
+  cursor: pointer;
+}
+.legend-row.dim:hover { background: transparent; opacity: 0.85; }
+.legend-main {
+  display: flex; align-items: center; gap: 9px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.legend-open {
+  font-size: 10px;
+  color: var(--accent-fg);
+  padding: 4px 8px;
+  border-radius: 3px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.legend-row:hover .legend-open,
+.legend-row.active .legend-open {
+  opacity: 1;
+  background: var(--bg-2);
+}
 .legend-dot {
   width: 10px; height: 10px;
   border-radius: 50%;
