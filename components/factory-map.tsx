@@ -10,10 +10,9 @@ import {
   createCoordinates,
   type Coordinates,
 } from '@vnedyalk0v/react19-simple-maps';
+import type { Topology } from 'topojson-specification';
 import type { FactoryListItem } from '@/lib/fetchers';
 import { lookupCoords } from '@/lib/geo';
-
-const GEO_URL = '/data/countries-110m.json';
 
 type Pin = {
   id: string;
@@ -27,7 +26,13 @@ type Pin = {
   unread: number;
 };
 
-export function FactoryMap({ factories }: { factories: FactoryListItem[] }) {
+export function FactoryMap({
+  factories,
+  topology,
+}: {
+  factories: FactoryListItem[];
+  topology: Topology;
+}) {
   const { pins, unmapped } = useMemo(() => {
     const pins: Pin[] = [];
     const unmapped: FactoryListItem[] = [];
@@ -62,11 +67,11 @@ export function FactoryMap({ factories }: { factories: FactoryListItem[] }) {
           projectionConfig={{ scale: 155 }}
           style={{ width: '100%', height: '100%' }}
         >
-          <Geographies geography={GEO_URL}>
+          <Geographies geography={topology}>
             {({ geographies }) =>
-              geographies.map((geo) => (
+              geographies.map((geo, i) => (
                 <Geography
-                  key={geo.rsmKey}
+                  key={String(geo.id ?? i)}
                   geography={geo}
                   style={{
                     default: {

@@ -4,8 +4,11 @@ import { Icons } from '@/components/icons';
 import { FactoryList } from '@/components/factory-list';
 import { FactoryGrid } from '@/components/factory-grid';
 import { FactoryMap } from '@/components/factory-map';
+import { FactoryFilters } from '@/components/factory-filters';
 import { StagePill, InvoiceStatusPill, FactoryStatusPill } from '@/components/pills';
 import { getFactoriesViewData } from '@/lib/fetchers';
+import { loadWorldTopology } from '@/lib/world-topology';
+import { applyFactoryFilters, parseFactoryFilters } from '@/lib/factory-filters';
 import type { FactoriesViewData } from '@/lib/fetchers';
 import {
   FactoryAddButton,
@@ -38,7 +41,17 @@ function toDollar(n: number | null | undefined): string {
 export default async function FactoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; tab?: string; view?: string }>;
+  searchParams: Promise<{
+    id?: string;
+    tab?: string;
+    view?: string;
+    q?: string;
+    status?: string;
+    country?: string;
+    unread?: string;
+    pinned?: string;
+    withSamples?: string;
+  }>;
 }) {
   const params = await searchParams;
   const tab: Tab =
@@ -47,14 +60,34 @@ export default async function FactoriesPage({
     ? (params.view as View)
     : 'list';
 
-  const data = await getFactoriesViewData(params.id);
+  const filters = parseFactoryFilters(params);
+
+  const [data, topology] = await Promise.all([
+    getFactoriesViewData(params.id),
+    view === 'map' ? loadWorldTopology() : Promise.resolve(null),
+  ]);
+
+  const filtered = applyFactoryFilters(data.factories, filters);
+  const countries = Array.from(
+    new Set(
+      data.factories
+        .map((f) => f.country?.trim())
+        .filter((c): c is string => !!c)
+    )
+  ).sort();
 
   const viewHref = (v: View) => {
-    const parts: string[] = [];
-    if (v !== 'list') parts.push(`view=${v}`);
-    if (params.id && v === 'list') parts.push(`id=${encodeURIComponent(params.id)}`);
-    if (params.tab && v === 'list') parts.push(`tab=${params.tab}`);
-    return `/factories${parts.length ? `?${parts.join('&')}` : ''}`;
+    const sp = new URLSearchParams();
+    if (v !== 'list') sp.set('view', v);
+    if (params.id && v === 'list') sp.set('id', params.id);
+    if (params.tab && v === 'list') sp.set('tab', params.tab);
+    // Preserve filter params.
+    for (const k of ['q', 'status', 'country', 'unread', 'pinned', 'withSamples']) {
+      const val = params[k as keyof typeof params];
+      if (val) sp.set(k, String(val));
+    }
+    const qs = sp.toString();
+    return `/factories${qs ? `?${qs}` : ''}`;
   };
 
   return (
@@ -86,9 +119,7 @@ export default async function FactoriesPage({
                 <Icons.globe /> Map
               </Link>
             </div>
-            <button className="btn" disabled title="Coming soon">
-              <Icons.filter /> Filter
-            </button>
+            <FactoryFilters countries={countries} />
             <FactoryAddButton />
           </>
         }
@@ -109,29 +140,39 @@ export default async function FactoriesPage({
             to load demo data.
           </div>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="canvas">
+          <div className="empty-state">
+            No factories match your filters.{' '}
+            <Link href="/factories" style={{ color: 'var(--accent-fg)' }}>
+              Clear filters
+            </Link>
+          </div>
+        </div>
       ) : view === 'grid' ? (
         <div className="canvas">
-          <FactoryGrid factories={data.factories} />
+          <FactoryGrid factories={filtered} />
         </div>
       ) : view === 'map' ? (
         <div className="canvas" style={{ padding: 0 }}>
-          <FactoryMap factories={data.factories} />
+          <FactoryMap factories={filtered} topology={topology!} />
         </div>
       ) : (
         <div className="canvas" style={{ display: 'flex' }}>
           <div className="split" style={{ width: '100%' }}>
             <FactoryList
-              factories={data.factories}
+              factories={filtered}
               selectedId={data.selected?.id ?? null}
               tab={tab}
             />
-            {data.selected && (
-              <FactoryDetail
-                selected={data.selected}
-                tab={tab}
-                allFactories={data.factories}
-              />
-            )}
+            {data.selected &&
+              filtered.some((f) => f.id === data.selected!.id) && (
+                <FactoryDetail
+                  selected={data.selected}
+                  tab={tab}
+                  allFactories={data.factories}
+                />
+              )}
           </div>
         </div>
       )}
