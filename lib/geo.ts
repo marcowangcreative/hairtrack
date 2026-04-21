@@ -8,6 +8,12 @@ type Coord = { lat: number; lng: number };
 
 const CITY_COORDS: Record<string, Coord> = {
   // Chinese manufacturing hubs
+  'xingtai': { lat: 37.0682, lng: 114.5048 },
+  'shijiazhuang': { lat: 38.0428, lng: 114.5149 },
+  'weifang': { lat: 36.7069, lng: 119.1619 },
+  'yantai': { lat: 37.4638, lng: 121.4478 },
+  'jinan': { lat: 36.6512, lng: 117.1201 },
+  'changsha': { lat: 28.2282, lng: 112.9388 },
   'guangzhou': { lat: 23.1291, lng: 113.2644 },
   'shenzhen': { lat: 22.5431, lng: 114.0579 },
   'dongguan': { lat: 23.0208, lng: 113.7518 },
@@ -105,20 +111,91 @@ const COUNTRY_COORDS: Record<string, Coord> = {
   'south africa': { lat: -30.5595, lng: 22.9375 },
 };
 
+// ISO 3166-1 alpha-2 / alpha-3 / common abbreviations -> canonical country name.
+const COUNTRY_ALIAS: Record<string, string> = {
+  cn: 'china',
+  chn: 'china',
+  in: 'india',
+  ind: 'india',
+  vn: 'vietnam',
+  vnm: 'vietnam',
+  bd: 'bangladesh',
+  bgd: 'bangladesh',
+  pk: 'pakistan',
+  pak: 'pakistan',
+  id: 'indonesia',
+  idn: 'indonesia',
+  ph: 'philippines',
+  phl: 'philippines',
+  th: 'thailand',
+  tha: 'thailand',
+  kr: 'south korea',
+  kor: 'south korea',
+  jp: 'japan',
+  jpn: 'japan',
+  tr: 'turkey',
+  tur: 'turkey',
+  it: 'italy',
+  ita: 'italy',
+  fr: 'france',
+  fra: 'france',
+  es: 'spain',
+  esp: 'spain',
+  de: 'germany',
+  deu: 'germany',
+  gb: 'united kingdom',
+  gbr: 'united kingdom',
+  us: 'united states',
+  usa: 'united states',
+  mx: 'mexico',
+  mex: 'mexico',
+  br: 'brazil',
+  bra: 'brazil',
+  pe: 'peru',
+  per: 'peru',
+  za: 'south africa',
+  zaf: 'south africa',
+};
+
+function normalizeCountry(raw: string): string {
+  const k = raw.trim().toLowerCase();
+  return COUNTRY_ALIAS[k] ?? k;
+}
+
+function cityCandidates(raw: string): string[] {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return [];
+  const out = new Set<string>();
+  out.add(trimmed);
+  // Split on commas/slashes and try each piece individually. Seed data uses
+  // e.g. "Qingdao, Shandong" — so the first comma-separated part is the city.
+  for (const piece of trimmed.split(/[,\/]+/)) {
+    const p = piece.trim();
+    if (p) out.add(p);
+  }
+  // And the first word (handles "Ho Chi Minh City" which is in the table, but
+  // also catches e.g. "Qingdao Shandong" without a comma).
+  const firstWord = trimmed.split(/\s+/)[0];
+  if (firstWord) out.add(firstWord);
+  return Array.from(out);
+}
+
 /**
- * Find best-effort coordinates for a factory. Tries the city first, then the
- * country. Returns null if nothing matches.
+ * Find best-effort coordinates for a factory. Tries the city (raw and split)
+ * first, then the country (accepting ISO codes or full names). Returns null
+ * if nothing matches.
  */
 export function lookupCoords(
   city: string | null | undefined,
   country: string | null | undefined
 ): Coord | null {
   if (city) {
-    const key = city.trim().toLowerCase();
-    if (CITY_COORDS[key]) return CITY_COORDS[key];
+    for (const key of cityCandidates(city)) {
+      if (CITY_COORDS[key]) return CITY_COORDS[key];
+    }
   }
   if (country) {
-    const key = country.trim().toLowerCase();
+    const key = normalizeCountry(country);
     if (COUNTRY_COORDS[key]) return COUNTRY_COORDS[key];
   }
   return null;
